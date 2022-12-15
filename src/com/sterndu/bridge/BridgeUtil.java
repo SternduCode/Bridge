@@ -39,7 +39,9 @@ public class BridgeUtil {
 				if (sp.length > 1) {
 					if (sp[1].equals("host")) {
 						endPoint = sp[1];
-						data = "";
+						data = sp.length > 2
+								? Stream.of(Arrays.copyOfRange(sp, 2, sp.length)).collect(Collectors.joining("/"))
+								: "";
 					} else if (sp[1].equals("join") || sp[1].equals("connect")) {
 						if (sp.length > 2) {
 							endPoint = sp[1];
