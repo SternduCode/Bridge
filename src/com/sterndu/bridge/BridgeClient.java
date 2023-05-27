@@ -3,81 +3,140 @@ package com.sterndu.bridge;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
-import java.util.function.Consumer;
+import java.util.Base64;
+
+import com.sterndu.data.transfer.Connector;
 import com.sterndu.data.transfer.secure.Socket;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class BridgeClient.
+ */
 public class BridgeClient {
+
+	/** The sock. */
 	private final Socket sock;
 
-	public BridgeClient(String hostname, Consumer<byte[]> consumer) throws UnknownHostException, IOException {
-		this(hostname, BridgeUtil.DEFAULT_PORT, consumer);
-	}
+	/**
+	 * Instantiates a new bridge client.
+	 *
+	 * @param hostname the hostname
+	 *
+	 * @throws UnknownHostException the unknown host exception
+	 * @throws IOException          Signals that an I/O exception has occurred.
+	 */
+	public BridgeClient(String hostname) throws UnknownHostException, IOException { this(hostname, BridgeUtil.DEFAULT_PORT); }
 
-	public BridgeClient(String hostname, int localPort) throws UnknownHostException, IOException {
-		this(hostname, BridgeUtil.DEFAULT_PORT, localPort);
-	}
-
-	public BridgeClient(String hostname, int port, Consumer<byte[]> consumer) throws UnknownHostException, IOException {
+	/**
+	 * Instantiates a new bridge client.
+	 *
+	 * @param hostname the hostname
+	 * @param port the port
+	 * @throws UnknownHostException the unknown host exception
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
+	public BridgeClient(String hostname, int port) throws UnknownHostException, IOException {
 		sock = new Socket(hostname, port);
-		host(consumer);
 	}
 
-	public BridgeClient(String hostname, int port, int localPort) throws UnknownHostException, IOException {
-		sock = new Socket(hostname, port);
-		host(localPort);
-	}
+	/**
+	 * Gets the sock.
+	 *
+	 * @return the sock
+	 */
+	Socket getSock() { return sock; }
 
-	public BridgeClient(String hostname, int port, String code) throws UnknownHostException, IOException {
-		sock = new Socket(hostname, port);
-		join(code);
-	}
+	/**
+	 * Connect.
+	 *
+	 * @param remoteHostname the remote hostname
+	 * @param remotePort     the remote port
+	 *
+	 * @return the connector
+	 */
+	public Connector connect(String remoteHostname, int remotePort) {
 
-	public BridgeClient(String hostname, int port, String remoteHostname, int remotePort)
-			throws UnknownHostException, IOException {
-		sock = new Socket(hostname, port);
-		connect(remoteHostname, remotePort);
-	}
-
-	public BridgeClient(String hostname, String code) throws UnknownHostException, IOException {
-		this(hostname, BridgeUtil.DEFAULT_PORT, code);
-	}
-
-	public BridgeClient(String hostname, String remoteHostname, int remotePort)
-			throws UnknownHostException, IOException {
-		this(hostname, BridgeUtil.DEFAULT_PORT, remoteHostname, remotePort);
-	}
-
-	public void connect(String remoteHostname, int remotePort) {
 		try {
 			byte[] str = remoteHostname.getBytes("UTF-8");
 			byte[] data = new byte[str.length + 8];
-			System.arraycopy(str, 0, data, 4, str.length);
 			ByteBuffer bb = ByteBuffer.wrap(data);
 			bb.order(ByteOrder.BIG_ENDIAN);
-			bb.putInt(0, str.length);
-			bb.putInt(data.length - 5, remotePort);
+			bb.putInt(str.length);
+			bb.put(str);
+			bb.putInt(remotePort);
 			sock.sendData((byte) 2, data);
+			sock.setHandle((byte) 2, (typ, dat) -> {
+				if (dat.length == 0) try {
+					sock.sendClose();
+					sock.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+
+			return new Connector(sock, (byte) 4);
 		} catch (UnsupportedEncodingException | SocketException e) {
 			e.printStackTrace();
+			return null;
 		}
-
 	}
 
-	public void host(Consumer<byte[]> consumer) throws SocketException {
-		sock.sendData((byte) 1, new byte[0]);
+	/**
+	 * Host.
+	 *
+	 * @return the host connector
+	 */
+	public HostConnector host() {
+		try {
+			sock.sendData((byte) 1, new byte[0]);
+			HostConnector hc = new HostConnector(
+					new Connector(sock, (byte) 6),
+					new Connector(sock, (byte) 5),
+					sock
+			);
+			sock.setHandle((byte) 1, (typ, dat) -> {
+				try {
+					hc.setCode(new String(Base64.getEncoder().encode(dat),"UTF-8"));
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
+			});
+			while (!hc.isCodeAvailable()) try {
+				Thread.sleep(5);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return hc;
+		} catch (SocketException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
-	public void host(int localPort) throws SocketException {
-
-		sock.sendData((byte) 1, new byte[0]);
-	}
-
-	public void join(String code) {
+	/**
+	 * Join.
+	 *
+	 * @param code the code
+	 *
+	 * @return the connector
+	 */
+	public Connector join(String code) {
 		try {
 			sock.sendData((byte) 3, code.getBytes("UTF-8"));
+			sock.setHandle((byte) 3, (typ, dat) -> {
+				if (dat.length == 0) try {
+					sock.sendClose();
+					sock.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+			return new Connector(sock, (byte) 5);
 		} catch (SocketException | UnsupportedEncodingException e) {
 			e.printStackTrace();
+			return null;
 		}
+
 	}
 
 }
