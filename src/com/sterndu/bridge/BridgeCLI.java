@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import com.sterndu.data.transfer.Connector;
 import com.sterndu.multicore.Updater;
-import com.sterndu.util.kotlin.Entry;
+import com.sterndu.util.Entry;
 
 
 // TODO: Auto-generated Javadoc
