@@ -3,6 +3,7 @@ package com.sterndu.bridge;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -11,7 +12,6 @@ import com.sterndu.multicore.Updater;
 import com.sterndu.util.Entry;
 
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class BridgeCLI.
  */
@@ -294,7 +294,6 @@ public class BridgeCLI {
 	 * @param announce  the announce
 	 * @param ui        the ui
 	 *
-	 * @return the string
 	 */
 	public static void host(String server, int port, int localPort, String announce, boolean ui) {
 		new Thread(() -> {
@@ -304,8 +303,10 @@ public class BridgeCLI {
 						+ server + ":" + port + " | " + announce);
 				BridgeClient	bc		= new BridgeClient(server, port);
 				HostConnector	hc		= bc.host();
-				if (BridgeUI.isUIEnabled() && ui)
+				if (BridgeUI.isUIEnabled() && ui) {
+					assert uiLi != null;
 					uiLi.add("Hosting port: " + localPort + " via: " + hc.getCode());
+				}
 				else
 					System.out.println("Hosting port: " + localPort + " via: " + hc.getCode());
 				String[]	sp				= announce.split(":");
@@ -313,14 +314,14 @@ public class BridgeCLI {
 				String									announceLocal	= announce.substring(0, announce.length() - announcePort.length() - 1);
 				com.sterndu.data.transfer.secure.Socket	announceSocket	= new com.sterndu.data.transfer.secure.Socket(announceLocal,
 						Integer.parseInt(announcePort));
-				announceSocket.sendData((byte) 0xa0, hc.getCode().getBytes("UTF-8"));
+				announceSocket.sendData((byte) 0xa0, hc.getCode().getBytes(StandardCharsets.UTF_8));
 				while (!announceSocket.isInitialized()) try {
-					Thread.sleep(5l);
+					Thread.sleep(5L);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 				try {
-					Thread.sleep(20l);
+					Thread.sleep(20L);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -347,7 +348,7 @@ public class BridgeCLI {
 										lSock.getInputStream().read(b_arr);
 										baos.write(b_arr);
 									}
-									if ("true".equals(System.getProperty("debug"))) System.out.println(new String(baos.toByteArray()));
+									if ("true".equals(System.getProperty("debug"))) System.out.println(baos);
 									hc.getNormalConnector().sendData(baos.toByteArray());
 								}
 							} catch (IOException e) {
@@ -578,43 +579,43 @@ public class BridgeCLI {
 				case "-s":
 				case "--server": {
 					if (argCollector == null) help();
-					argCollector.setServer(it.next());
+					else argCollector.setServer(it.next());
 					break;
 				}
 				case "-p":
 				case "--port": {
 					if (argCollector == null) help();
-					argCollector.setPort(it.next());
+					else argCollector.setPort(it.next());
 					break;
 				}
 				case "-t":
 				case "--target": {
 					if (argCollector == null) help();
-					argCollector.setTarget(it.next());
+					else argCollector.setTarget(it.next());
 					break;
 				}
 				case "-c":
 				case "--code": {
 					if (argCollector == null) help();
-					argCollector.setCode(it.next());
+					else argCollector.setCode(it.next());
 					break;
 				}
 				case "-l":
 				case "--local-port": {
 					if (argCollector == null) help();
-					argCollector.setLocalPort(it.next());
+					else argCollector.setLocalPort(it.next());
 					break;
 				}
 				case "-a":
 				case "--announce": {
 					if (argCollector == null) help();
-					argCollector.setAnnounce(it.next());
+					else argCollector.setAnnounce(it.next());
 					break;
 				}
 				case "-u":
 				case "--ui": {
 					if (argCollector == null) help();
-					argCollector.setUI(true);
+					else argCollector.setUI(true);
 					break;
 				}
 				case "-v":
