@@ -257,7 +257,6 @@ public class BridgeCLI {
 	 * Help.
 	 */
 	public static void help() {
-		for (StackTraceElement ste : Thread.currentThread().getStackTrace()) System.err.println(ste);
 		System.out.println(
 				"host -s/--server sterndu.com:55601 (-p/--port 55601) (-l/--local-port 25566) connect -s/--server sterndu.com:55601 (-p/--port 55601) -t/--target lin.sterndu.com:453 join -s/--server sterndu.com:55601 (-p/--port 55601) -c/--code hvcxdrt675 server (-p/--port 55601)");
 		System.out.println("[[MODE] [OPTION]... ]...");
