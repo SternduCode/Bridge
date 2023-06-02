@@ -200,7 +200,19 @@ public class BridgeCLI {
 									s.getOutputStream().write(data);
 									s.getOutputStream().flush();
 								} catch (IOException e) {
-									e.printStackTrace();
+									try {
+										Updater.getInstance().remove("RecvAdapterConnect" + appendix);
+										Updater.getInstance().remove("KillConnect" + appendix);
+										try {
+											bc.getSock().sendClose();
+										} catch (final Exception ignored) {
+										}
+										bc.getSock().close();
+										s.close();
+									} catch (IOException ex) {
+										ex.initCause(e);
+										ex.printStackTrace();
+									}
 								}
 							});
 							Updater.getInstance().add((Runnable) () -> {
@@ -215,7 +227,19 @@ public class BridgeCLI {
 										hc.getSock().sendData((byte) hc.getType(), baos.toByteArray());
 									}
 								} catch (IOException e) {
-									e.printStackTrace();
+									try {
+										Updater.getInstance().remove("RecvAdapterConnect" + appendix);
+										Updater.getInstance().remove("KillConnect" + appendix);
+										try {
+											bc.getSock().sendClose();
+										} catch (final Exception ignored) {
+										}
+										bc.getSock().close();
+										s.close();
+									} catch (IOException ex) {
+										ex.initCause(e);
+										ex.printStackTrace();
+									}
 								}
 							}, "RecvAdapterConnect" + appendix);
 							Updater.getInstance().add((Runnable) () -> {
@@ -303,30 +327,31 @@ public class BridgeCLI {
 						+ server + ":" + port + " | " + announce);
 				BridgeClient	bc		= new BridgeClient(server, port);
 				HostConnector	hc		= bc.host();
-				if (BridgeUI.isUIEnabled() && ui) {
-					assert uiLi != null;
+				if (uiLi != null) {
 					uiLi.add("Hosting port: " + localPort + " via: " + hc.getCode());
 				}
 				else
 					System.out.println("Hosting port: " + localPort + " via: " + hc.getCode());
-				String[]	sp				= announce.split(":");
-				String		announcePort	= sp[sp.length - 1];
-				String									announceLocal	= announce.substring(0, announce.length() - announcePort.length() - 1);
-				com.sterndu.data.transfer.secure.Socket	announceSocket	= new com.sterndu.data.transfer.secure.Socket(announceLocal,
-						Integer.parseInt(announcePort));
-				announceSocket.sendData((byte) 0xa0, hc.getCode().getBytes(StandardCharsets.UTF_8));
-				while (!announceSocket.isInitialized()) try {
-					Thread.sleep(5L);
-				} catch (Exception e) {
-					e.printStackTrace();
+				if (announce != null && announce.length() > 0) {
+					String[] sp = announce.split(":");
+					String announcePort = sp[sp.length - 1];
+					String announceLocal = announce.substring(0, announce.length() - announcePort.length() - 1);
+					com.sterndu.data.transfer.secure.Socket announceSocket = new com.sterndu.data.transfer.secure.Socket(announceLocal,
+							Integer.parseInt(announcePort));
+					announceSocket.sendData((byte) 0xa0, hc.getCode().getBytes(StandardCharsets.UTF_8));
+					while (!announceSocket.isInitialized()) try {
+						Thread.sleep(5L);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					try {
+						Thread.sleep(20L);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					announceSocket.sendClose();
+					announceSocket.close();
 				}
-				try {
-					Thread.sleep(20L);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				announceSocket.sendClose();
-				announceSocket.close();
 				Map<byte[], Socket> connections = new HashMap<>();
 				hc.getAnnounceConnector().setHandle((type, addr) -> {
 					String appendix = "Host" + localPort + "|" + server + ":" + port + "|" + new String(addr);
@@ -430,7 +455,9 @@ public class BridgeCLI {
 	public static void join(String server, int port, String code, int localPort, boolean ui) {
 		new Thread(() -> {
 			try {
-				List<String>	uiLi	= BridgeUI.INSTANCE.getLog("Join " + localPort + " | "
+				List<String>	uiLi;
+				if (ui && BridgeUI.isUIEnabled())
+					uiLi = BridgeUI.INSTANCE.getLog("Join " + localPort + " | "
 						+ server + ":" + port + " | " + code);
 				ServerSocket ss = new ServerSocket(localPort);
 				System.out.println("Running on port: " + ss.getLocalPort());
@@ -449,7 +476,19 @@ public class BridgeCLI {
 									s.getOutputStream().write(data);
 									s.getOutputStream().flush();
 								} catch (IOException e) {
-									e.printStackTrace();
+									try {
+										Updater.getInstance().remove("RecvAdapterConnect" + appendix);
+										Updater.getInstance().remove("KillConnect" + appendix);
+										try {
+											bc.getSock().sendClose();
+										} catch (final Exception ignored) {
+										}
+										bc.getSock().close();
+										s.close();
+									} catch (IOException ex) {
+										ex.initCause(e);
+										ex.printStackTrace();
+									}
 								}
 							});
 							Updater.getInstance().add((Runnable) () -> {
@@ -464,7 +503,19 @@ public class BridgeCLI {
 										hc.sendData((byte) hc.getType(), baos.toByteArray());
 									}
 								} catch (IOException e) {
-									e.printStackTrace();
+									try {
+										Updater.getInstance().remove("RecvAdapterConnect" + appendix);
+										Updater.getInstance().remove("KillConnect" + appendix);
+										try {
+											bc.getSock().sendClose();
+										} catch (final Exception ignored) {
+										}
+										bc.getSock().close();
+										s.close();
+									} catch (IOException ex) {
+										ex.initCause(e);
+										ex.printStackTrace();
+									}
 								}
 							}, "RecvAdapterConnect" + appendix);
 							Updater.getInstance().add((Runnable) () -> {

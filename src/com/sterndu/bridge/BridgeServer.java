@@ -3,7 +3,9 @@ package com.sterndu.bridge;
 import java.io.*;
 import java.net.SocketException;
 import java.nio.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.sterndu.data.transfer.secure.*;
@@ -68,26 +70,46 @@ public class BridgeServer {
 	 * Start. TODO ui
 	 */
 	public void start() {
+
+		List<String> log;
+
+		if (ui && BridgeUI.isUIEnabled()) {
+			log = BridgeUI.INSTANCE.getLog("Server");
+		} else {
+			log = null;
+		}
+
+		if (log != null)
+			log.add("Server init");
+
 		try {
 			serverSocket.setSoTimeout(500);
 			while (System.in.available() == 0) try {
+				if (log != null) {
+					log.set(0, "Main Loop");
+					AtomicInteger i = new AtomicInteger(1);
+					clis.forEach((so, cli) -> {
+						String out = i.get() + " " + so + " " + cli.values();
+						if (log.size() <= i.get()) {
+							log.add(out);
+						} else {
+							log.set(i.get(), out);
+						}
+						i.getAndIncrement();
+					});
+				}
 				Socket s = serverSocket.accept();
 				if (s != null) {
 					// Host
 					s.setHandle((byte) 1, (type, data) -> {
-						String	out	= null;
+						String	out;
 						byte[] value;
 						do {
 							value = new byte[16];
 							Random r = new Random();
 							r.nextBytes(value);
-							try {
-								out = new String(Base64.getEncoder().encode(value), "UTF-8");
-							} catch (UnsupportedEncodingException e) {
-								e.printStackTrace();
-								continue;
-							}
-						} while (out == null || hosts.containsKey(out)); // Maybe Error
+							out = new String(Base64.getEncoder().encode(value), StandardCharsets.UTF_8);
+						} while (hosts.containsKey(out)); // Maybe Error
 						Map<byte[], Socket> cli = new HashMap<>();
 						clis.put(s, cli);
 						hosts.put(out, s);
@@ -272,7 +294,7 @@ public class BridgeServer {
 						}
 					});
 				}
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -59,7 +59,7 @@ public class BridgeUI {
 					for (int i = 0; i < 30; i++) if (li.size() > i) System.console().writer().println(li.get(i));
 					System.console().writer().flush();
 				}
-			}, "Bridge-UI", 100);
+			}, "Bridge-UI", 500);
 		}
 	}
 
