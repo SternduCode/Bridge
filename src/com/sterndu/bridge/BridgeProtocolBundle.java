@@ -8,7 +8,7 @@ public final class BridgeProtocolBundle {
 	private final String endPoint;
 	private final String data;
 
-	BridgeProtocolBundle(String domain, int port, String endPoint, String data) {
+	public BridgeProtocolBundle(String domain, int port, String endPoint, String data) {
 		this.domain = domain;
 		this.port = port;
 		this.endPoint = endPoint;

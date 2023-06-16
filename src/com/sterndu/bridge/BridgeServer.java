@@ -188,7 +188,7 @@ public class BridgeServer {
 							byte[]		domain	= new byte[length];
 							buff.get(domain);
 							int port = buff.getInt();
-							java.net.Socket conn = new java.net.Socket(new String(domain, "UTF-8"), port);
+							java.net.Socket conn = new java.net.Socket(new String(domain, StandardCharsets.UTF_8), port);
 							s.setHandle((byte) 4, (typ, dat) -> {
 								try {
 									conn.getOutputStream().write(dat);
