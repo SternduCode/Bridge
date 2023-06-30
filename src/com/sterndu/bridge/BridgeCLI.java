@@ -224,7 +224,7 @@ public class BridgeCLI {
 											s.getInputStream().read(b_arr);
 											baos.write(b_arr);
 										}
-										hc.getSock().sendData((byte) hc.getType(), baos.toByteArray());
+										hc.getSock().sendData(hc.getType(), baos.toByteArray());
 									}
 								} catch (IOException e) {
 									try {
@@ -339,7 +339,7 @@ public class BridgeCLI {
 					com.sterndu.data.transfer.secure.Socket announceSocket = new com.sterndu.data.transfer.secure.Socket(announceLocal,
 							Integer.parseInt(announcePort));
 					announceSocket.sendData((byte) 0xa0, hc.getCode().getBytes(StandardCharsets.UTF_8));
-					while (!announceSocket.isInitialized()) try {
+					while (!announceSocket.getInitialized()) try {
 						Thread.sleep(5L);
 					} catch (Exception e) {
 						e.printStackTrace();
