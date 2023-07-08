@@ -1,10 +1,14 @@
 @file:JvmName("BridgeUI")
 package com.sterndu.bridge
 
+import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.logging.ConsoleHandler
+import java.util.logging.Level
+import java.util.logging.Logger
 
 object BridgeUI {
 
@@ -22,10 +26,13 @@ object BridgeUI {
 	private var lastSize = 0
 	private var lastHashCode = 0
 
+	private val logger: Logger
+
 	/**
 	 * Instantiates a new bridge UI.
 	 */
 	init {
+		logger = LoggingUtil.getLogger("BridgeUI")
 		if (isUIEnabled) {
 			it = logs.entries.iterator()
 			Updater.add(Runnable {
@@ -71,6 +78,7 @@ object BridgeUI {
 	private fun checkOsWindows()= System.getProperty("os.name").lowercase().contains("win")
 
 	private fun init() {
+		logger.handlers.filterIsInstance<ConsoleHandler>().onEach { it.level = Level.OFF }
 		if (checkOsWindows()) {
 			// tets ps
 			// run (Get-Host).ui.rawui.windowsize
