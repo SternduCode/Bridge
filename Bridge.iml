@@ -11,5 +11,6 @@
     <orderEntry type="module" module-name="Multicore" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
     <orderEntry type="module" module-name="Util" />
+    <orderEntry type="module" module-name="Balancer" />
   </component>
 </module>
