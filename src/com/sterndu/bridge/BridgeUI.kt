@@ -19,6 +19,9 @@ object BridgeUI {
 	/** The logs.  */
 	private val logs = ConcurrentHashMap<Any, ArrayList<String>>()
 
+	private var lastSize = 0
+	private var lastHashCode = 0
+
 	/**
 	 * Instantiates a new bridge UI.
 	 */
@@ -27,24 +30,34 @@ object BridgeUI {
 			it = logs.entries.iterator()
 			Updater.add(Runnable {
 				val localIt = it!!
-				if (!localIt.hasNext()) it = logs.entries.iterator() else if (System.currentTimeMillis() - currentTime >= showTime) {
+				if (!localIt.hasNext()) {
+					it = logs.entries.iterator()
+					lastSize = 0
+					lastHashCode = 0
+				} else if (System.currentTimeMillis() - currentTime >= showTime) {
 					current = localIt.next().toPair()
 					currentTime = System.currentTimeMillis()
+					lastSize = 0
+					lastHashCode = 0
 				} else {
-					try {
-						if (checkOsWindows())
-							ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor()
-						else
-							ProcessBuilder("clear").inheritIO().start().waitFor()
-					} catch (e: InterruptedException) {
-						e.printStackTrace()
-					} catch (e: IOException) {
-						e.printStackTrace()
+					if (lastSize != current!!.second.size || lastHashCode != current!!.second.hashCode()) {
+						try {
+							if (checkOsWindows())
+								ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor()
+							else
+								ProcessBuilder("clear").inheritIO().start().waitFor()
+						} catch (e: InterruptedException) {
+							e.printStackTrace()
+						} catch (e: IOException) {
+							e.printStackTrace()
+						}
+						println(current!!.first.toString())
+						val li = current!!.second
+						for (i in 0..49) if (li.size > i) println(li[i])
+						System.out.flush()
+						lastSize = li.size
+						lastHashCode = li.hashCode()
 					}
-					println(current!!.first.toString())
-					val li = current!!.second
-					for (i in 0..49) if (li.size > i) println(li[i])
-					System.out.flush()
 				}
 			}, "Bridge-UI", 1000)
 		}
