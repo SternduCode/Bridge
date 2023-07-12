@@ -1,6 +1,7 @@
 @file:JvmName("BridgeTester")
 package com.sterndu.bridge
 
+import com.sterndu.multicore.LoggingUtil
 import java.io.IOException
 import java.nio.ByteBuffer
 import kotlin.system.exitProcess
@@ -13,12 +14,13 @@ object BridgeTester {
 	 */
 	@JvmStatic
 	fun main(args: Array<String>) {
+		val logger = LoggingUtil.getLogger("BridgeTester")
 		val join = "bridge://domain/join/code"
 		val connect = "bridge://domain:64/connect/domain:port"
 		val host = "bridge://domain:2344/host/64"
-		println(BridgeUtil.split(join))
-		println(BridgeUtil.split(connect))
-		println(BridgeUtil.split(host))
+		logger.info(BridgeUtil.split(join).toString())
+		logger.info(BridgeUtil.split(connect).toString())
+		logger.info(BridgeUtil.split(host).toString())
 		System.setProperty("debug", "true")
 //		Thread({
 //			try {
@@ -31,9 +33,9 @@ object BridgeTester {
 //					bb[addr]
 //					val remData = ByteArray(dat.size - len - 4)
 //					bb[remData]
-//					println(typ.toString() + " " + String(remData))
+//					logger.info(typ.toString() + " " + String(remData))
 //				}
-//				println(conn.code)
+//				logger.info(conn.code)
 //			} catch (e: IOException) {
 //				e.printStackTrace()
 //			}

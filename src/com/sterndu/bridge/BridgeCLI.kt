@@ -3,6 +3,7 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
+import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
 import com.sterndu.network.balancer.Balancer
@@ -18,9 +19,14 @@ import java.nio.ByteOrder
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.logging.ConsoleHandler
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.system.exitProcess
 
 object BridgeCLI {
+	private lateinit var logger: Logger
+
 	/**
 	 * Connect. TODO
 	 *
@@ -39,7 +45,7 @@ object BridgeCLI {
 							+ server + ":" + port + " | " + remote + ":" + remotePort
 				) else null
 				val locSocket = ServerSocket(localPort)
-				uiLi?.add("Running on port: " + locSocket.localPort) ?: println("Running on port: " + locSocket.localPort)
+				uiLi?.add("Running on port: " + locSocket.localPort) ?: logger.info("Running on port: " + locSocket.localPort)
 				while (System.`in`.available() == 0) {
 					val s = locSocket.accept()
 					Thread {
@@ -55,7 +61,7 @@ object BridgeCLI {
 							hc.disableHandle()
 							hc.sock.setHandle(hc.type) { type: Byte, data: ByteArray ->
 								try {
-									if ("true" == System.getProperty("debug")) println(String(data))
+									logger.fine(String(data))
 									s.getOutputStream().write(data)
 									s.getOutputStream().flush()
 								} catch (e: IOException) {
@@ -65,13 +71,13 @@ object BridgeCLI {
 										try {
 											bc.sock.sendClose()
 										} catch (ignored: Exception) {
-											println("Socket already closed")
+											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
-										ex.printStackTrace()
+										logger.log(Level.WARNING, "BridgeCLI", ex)
 									}
 								}
 							}
@@ -93,13 +99,13 @@ object BridgeCLI {
 										try {
 											bc.sock.sendClose()
 										} catch (ignored: Exception) {
-											println("Socket already closed")
+											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
-										ex.printStackTrace()
+										logger.log(Level.WARNING, "BridgeCLI", ex)
 									}
 								}
 							}, "RecvAdapterConnect$appendix")
@@ -110,9 +116,9 @@ object BridgeCLI {
 											Thread.sleep(2000)
 											s.close()
 										} catch (e: InterruptedException) {
-											e.printStackTrace()
+											logger.log(Level.WARNING, "BridgeCLI", e)
 										} catch (e: IOException) {
-											e.printStackTrace()
+											logger.log(Level.WARNING, "BridgeCLI", e)
 										}
 									}.start()
 									remove("RecvAdapterConnect$appendix")
@@ -123,17 +129,17 @@ object BridgeCLI {
 									remove("RecvAdapterConnect$appendix")
 									remove("KillConnect$appendix")
 								} catch (e: IOException) {
-									e.printStackTrace()
+									logger.log(Level.WARNING, "BridgeCLI", e)
 								}
 							}, "KillConnect$appendix")
 						} catch (e: IOException) {
-							e.printStackTrace()
+							logger.log(Level.WARNING, "BridgeCLI", e)
 						}
 					}.start()
 				}
 				locSocket.close()
-			} catch (e1: IOException) {
-				e1.printStackTrace()
+			} catch (e: IOException) {
+				logger.log(Level.WARNING, "BridgeCLI", e)
 			}
 		}.start()
 	}
@@ -142,43 +148,40 @@ object BridgeCLI {
 	 * Help.
 	 */
 	fun help() {
-		println(
-			"host -s/--server sterndu.com:55601 (-p/--port 55601) (-l/--local-port 25566) connect -s/--server sterndu.com:55601 (-p/--port 55601) -t/--target lin.sterndu.com:453 join -s/--server sterndu.com:55601 (-p/--port 55601) -c/--code hvcxdrt675 server (-p/--port 55601)"
-		)
-		println("[[MODE] [OPTION]... ]...")
-		println()
-		println("modes:")
-		println("  connect")
-		println("  join")
-		println("  host")
-		println("  server")
-		println("  stresstest")
-		println("  announce-server")
-		println("  ping")
-		println()
-		println(
+		logger.info("Usage: [[MODE] [OPTION]... ]...")
+		logger.info("")
+		logger.info("modes:")
+		logger.info("  connect")
+		logger.info("  join")
+		logger.info("  host")
+		logger.info("  server")
+		logger.info("  stresstest")
+		logger.info("  announce-server")
+		logger.info("  ping")
+		logger.info("")
+		logger.info(
 			"Inside the () there are all modes with which the option can be used, if the mode is followed with an ! it is mandatory in that mode"
 		)
-		println()
-		println("options:")
-		println("  -s, --server ADDRESS       the bridge server it should connect to, can contain the port (connect!, join!, host!, ping!)")
-		println("  -p, --port NUMBER          the port on which the server is running/should run (connect, join, host, server, announce-server, ping)")
-		println("  -t, --target ADDRESS       the target server you want to connect to (connect!)")
-		println("  -c, --code CODE            the code that is displayed on the 'host' you want to connect to (join!)")
-		println("  -l, --local-port NUMBER    the port that should be used locally, in host mode it is the port that should be hosted," +
+		logger.info("")
+		logger.info("options:")
+		logger.info("  -s, --server ADDRESS       the bridge server it should connect to, can contain the port (connect!, join!, host!, ping!)")
+		logger.info("  -p, --port NUMBER          the port on which the server is running/should run (connect, join, host, server, announce-server, ping)")
+		logger.info("  -t, --target ADDRESS       the target server you want to connect to (connect!)")
+		logger.info("  -c, --code CODE            the code that is displayed on the 'host' you want to connect to (join!)")
+		logger.info("  -l, --local-port NUMBER    the port that should be used locally, in host mode it is the port that should be hosted," +
 				" in the other modes its the port you connect to (connect, join, host!)")
-		println("  -a, --announce ADDRESS     the address where the code, with which you can join the connection, will be sent to (host)")
-		println("  -e, --cycles NUMBER        how many cycles the stresstest should do in the cycles phase (default: 200) (stresstest)")
-		println("  -d, --duration NUMBER      how long in millis the stresstest should run in timed phase (default: 20000 (= 20sec)) (stresstest)")
-		println("      --long-duration NUMBER how long in millis the stresstest should run in long duration phase (default: 50000 (= 50sec)) (stresstest)")
-		println("      --timeout NUMBER       after what time in millis the stresstest is aborted (default: 80000 (= 80sec)) (stresstest)")
-		println("      --wait NUMBER          how long in millis the stresstest should wait between phases (default: 2000 (= 2sec)) (stresstest)")
-		println("  -x, --cores NUMBER         how many Thread/Cores the stresstest should use (default: all available (${Runtime.getRuntime().availableProcessors()})) (stresstest)")
-		println("  -r, --raw                  if selected, data sent will not be encrypted (ping)")
-		println("  -u, --ui                   show output in the ui (connect, join, host, server, announce-server)")
-		println()
-		println("You can add the option -v / --verbose  anywhere to enable debug output in all modes")
-		println()
+		logger.info("  -a, --announce ADDRESS     the address where the code, with which you can join the connection, will be sent to (host)")
+		logger.info("  -e, --cycles NUMBER        how many cycles the stresstest should do in the cycles phase (default: 200) (stresstest)")
+		logger.info("  -d, --duration NUMBER      how long in millis the stresstest should run in timed phase (default: 20000 (= 20sec)) (stresstest)")
+		logger.info("      --long-duration NUMBER how long in millis the stresstest should run in long duration phase (default: 50000 (= 50sec)) (stresstest)")
+		logger.info("      --timeout NUMBER       after what time in millis the stresstest is aborted (default: 80000 (= 80sec)) (stresstest)")
+		logger.info("      --wait NUMBER          how long in millis the stresstest should wait between phases (default: 2000 (= 2sec)) (stresstest)")
+		logger.info("  -x, --cores NUMBER         how many Thread/Cores the stresstest should use (default: all available (${Runtime.getRuntime().availableProcessors()})) (stresstest)")
+		logger.info("  -r, --raw                  if selected, data sent will not be encrypted (ping)")
+		logger.info("  -u, --ui                   show output in the ui (connect, join, host, server, announce-server)")
+		logger.info("")
+		logger.info("You can add the option -v / --verbose  anywhere to enable debug output in all modes")
+		logger.info("")
 		exitProcess(0)
 	}
 
@@ -204,7 +207,7 @@ object BridgeCLI {
 				while (hc == null) {
 					hc = bc.host()
 				}
-				uiLi?.add("Hosting port: " + localPort + " via: " + hc.code) ?: println("Hosting port: " + localPort + " via: " + hc.code)
+				uiLi?.add("Hosting port: " + localPort + " via: " + hc.code) ?: logger.info("Hosting port: " + localPort + " via: " + hc.code)
 				if (announce.isNotEmpty()) try {
 					val sp = announce.split(":").dropLastWhile { it.isEmpty() }.toTypedArray()
 					val announcePort = sp.last()
@@ -214,17 +217,17 @@ object BridgeCLI {
 					while (!announceSocket.initialized) try {
 						Thread.sleep(5L)
 					} catch (e: Exception) {
-						e.printStackTrace()
+						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 					try {
 						Thread.sleep(20L)
 					} catch (e: Exception) {
-						e.printStackTrace()
+						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 					announceSocket.sendClose()
 					announceSocket.close()
 				} catch (e: Exception) {
-					println("$announce is not a correct hostname:port pair")
+					logger.warning("$announce is not a correct hostname:port pair")
 				}
 				val connections: MutableMap<ByteArray, Socket> = HashMap()
 				hc.announceConnector.handle = { type: Byte, addr: ByteArray ->
@@ -232,7 +235,7 @@ object BridgeCLI {
 					if (type.toInt() == 1) try {
 						var lSock: Socket
 						connections[addr] = Socket("localhost", localPort).also { lSock = it }
-						if ("true" == System.getProperty("debug")) println(addr.contentToString())
+						logger.fine(addr.contentToString())
 						add(Runnable {
 							try {
 								if (lSock.getInputStream().available() > 0) {
@@ -247,11 +250,11 @@ object BridgeCLI {
 										val read = lSock.getInputStream().read(b_arr)
 										baos.write(b_arr, 0, read)
 									}
-									if ("true" == System.getProperty("debug")) println(baos)
+									logger.fine(baos.toString())
 									hc.normalConnector.sendData(baos.toByteArray())
 								}
 							} catch (e: IOException) {
-								e.printStackTrace()
+								logger.log(Level.WARNING, "BridgeCLI", e)
 							}
 						}, "RecvAdapterConnect$appendix")
 						add(Runnable {
@@ -260,22 +263,22 @@ object BridgeCLI {
 								remove("RecvAdapterConnect$appendix")
 								remove("KillConnect$appendix")
 							} catch (e: IOException) {
-								e.printStackTrace()
+								logger.log(Level.WARNING, "BridgeCLI", e)
 							} else if (!lSock.isConnected || lSock.isClosed) try {
 								hc.announceConnector.sendData(2.toByte(), addr)
 								remove("RecvAdapterConnect$appendix")
 								remove("KillConnect$appendix")
 							} catch (e: IOException) {
-								e.printStackTrace()
+								logger.log(Level.WARNING, "BridgeCLI", e)
 							}
 						}, "KillConnect$appendix")
 					} catch (e: Exception) {
-						e.printStackTrace()
+						logger.log(Level.WARNING, "BridgeCLI", e)
 					} else try {
 						connections[addr]!!.close()
 						connections.remove(addr)
 					} catch (e: IOException) {
-						e.printStackTrace()
+						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 				}
 				hc.normalConnector.handle = { type: Byte?, data: ByteArray ->
@@ -289,28 +292,28 @@ object BridgeCLI {
 						val length = bb.getInt()
 						val addr = ByteArray(length)
 						bb[addr]
-						if ("true" == System.getProperty("debug")) println(addr.contentToString())
+						logger.fine(addr.contentToString())
 						val dat = ByteArray(data.size - bb.position())
 						bb[dat]
-						if ("true" == System.getProperty("debug")) println(String(dat))
-						if ("true" == System.getProperty("debug")) println(
+						logger.fine(String(dat))
+						logger.fine(
 							connections.map { (key, value): Map.Entry<ByteArray, Socket> ->
 								Entry(key.contentToString(), value)
-							}
+							}.toString()
 						)
-						if ("true" == System.getProperty("debug")) println(connections[addr])
-						if ("true" == System.getProperty("debug")) println(addr.contentToString())
+						logger.fine(connections[addr].toString())
+						logger.fine(addr.contentToString())
 						for ((key, value) in connections) if (key.contentEquals(addr)) {
 							val outputStream = value.getOutputStream()
 							outputStream.write(dat)
 							outputStream.flush()
 						}
 					} catch (e: IOException) {
-						e.printStackTrace()
+						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 				}
-			} catch (e1: IOException) {
-				e1.printStackTrace()
+			} catch (e: IOException) {
+				logger.log(Level.WARNING, "BridgeCLI", e)
 			}
 		}.start()
 	}
@@ -332,7 +335,7 @@ object BridgeCLI {
 							+ server + ":" + port + " | " + code
 				) else null
 				val ss = ServerSocket(localPort)
-				uiLi?.add("Running on port: " + ss.localPort) ?: println("Running on port: " + ss.localPort)
+				uiLi?.add("Running on port: " + ss.localPort) ?: logger.info("Running on port: " + ss.localPort)
 				while (System.`in`.available() == 0) {
 					val s = ss.accept()
 					Thread {
@@ -347,7 +350,7 @@ object BridgeCLI {
 							}
 							hc.handle = { type: Byte, data: ByteArray ->
 								try {
-									if ("true" == System.getProperty("debug")) println(String(data))
+									logger.fine(String(data))
 									s.getOutputStream().write(data)
 									s.getOutputStream().flush()
 								} catch (e: IOException) {
@@ -357,13 +360,13 @@ object BridgeCLI {
 										try {
 											bc.sock.sendClose()
 										} catch (ignored: Exception) {
-											println("Socket already closed")
+											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
-										ex.printStackTrace()
+										logger.log(Level.WARNING, "BridgeCLI", ex)
 									}
 								}
 							}
@@ -385,13 +388,13 @@ object BridgeCLI {
 										try {
 											bc.sock.sendClose()
 										} catch (ignored: Exception) {
-											println("Socket already closed")
+											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
-										ex.printStackTrace()
+										logger.log(Level.WARNING, "BridgeCLI", ex)
 									}
 								}
 							}, "RecvAdapterConnect$appendix")
@@ -402,9 +405,9 @@ object BridgeCLI {
 											Thread.sleep(2000)
 											s.close()
 										} catch (e: InterruptedException) {
-											e.printStackTrace()
+											logger.log(Level.WARNING, "BridgeCLI", e)
 										} catch (e: IOException) {
-											e.printStackTrace()
+											logger.log(Level.WARNING, "BridgeCLI", e)
 										}
 									}.start()
 									remove("RecvAdapterConnect$appendix")
@@ -415,17 +418,17 @@ object BridgeCLI {
 									remove("RecvAdapterConnect$appendix")
 									remove("KillConnect$appendix")
 								} catch (e: IOException) {
-									e.printStackTrace()
+									logger.log(Level.WARNING, "BridgeCLI", e)
 								}
 							}, "KillConnect$appendix")
 						} catch (e: Exception) {
-							e.printStackTrace()
+							logger.log(Level.WARNING, "BridgeCLI", e)
 						}
 					}.start()
 				}
 				ss.close()
 			} catch (e: IOException) {
-				e.printStackTrace()
+				logger.log(Level.WARNING, "BridgeCLI", e)
 			}
 		}.start()
 	}
@@ -437,12 +440,13 @@ object BridgeCLI {
 	 */
 	@JvmStatic
 	fun main(args: Array<String>) {
+		logger = LoggingUtil.getLogger("BridgeCLI")
 		if (args.isEmpty()) help()
 		var argCollector: ArgCollector? = null
 		val it: Iterator<String> = args.iterator()
 		while (it.hasNext()) {
 			val arg = it.next()
-			println(arg)
+			logger.fine(arg)
 			when (arg) {
 				"host" -> {
 					argCollector?.run()
@@ -485,7 +489,7 @@ object BridgeCLI {
 								try {
 									BridgeServer(port, ui).start()
 								} catch (e: IOException) {
-									e.printStackTrace()
+									logger.log(Level.WARNING, "BridgeCLI", e)
 								}
 							}.start()
 						}
@@ -519,6 +523,7 @@ object BridgeCLI {
 					argCollector?.run()
 					argCollector = object  : ArgCollector() {
 						override fun run() {
+							if ("" == server) help()
 							ping(server, port, raw)
 						}
 					}
@@ -582,6 +587,7 @@ object BridgeCLI {
 
 				"-v", "--verbose" -> {
 					System.setProperty("debug", "true")
+					logger.handlers.filterIsInstance<ConsoleHandler>().onEach { it.level = Level.FINE }
 				}
 
 				else -> help()
@@ -603,35 +609,35 @@ object BridgeCLI {
 		try {
 			sock.sendClose()
 		} catch (e: SocketException) {
-			println("Socket already closed")
+			logger.finer("Socket already closed")
 		}
 		sock.close()
-		println("Ping to $server:$port took ${millis}ms")
+		logger.info("Ping to $server:$port took ${millis}ms")
 	}
 
 	private fun stresstest(cycles: Long, duration: Long, longDuration: Long, timeout: Long, wait: Long, cores: Int) {
-		println(Runtime.getRuntime().totalMemory())
-		println(Runtime.getRuntime().maxMemory())
-		println(Runtime.getRuntime().freeMemory())
+		logger.info(Runtime.getRuntime().totalMemory().toString())
+		logger.info(Runtime.getRuntime().maxMemory().toString())
+		logger.info(Runtime.getRuntime().freeMemory().toString())
 		val value: Long = 15000
 		val r = Runnable { Tester.func2(value) }
 		val ds = Balancer.longDurationTest(r, longDuration, cores, 4)
-		println(ds.contentToString())
+		logger.info(ds.contentToString())
 		val b2 = Balancer()
-		println("The test is to calculate a sliver of Mandelbrot with a max Iteration count of : $value")
-		println("The test is running on $cores Threads/Cores simultaneously")
+		logger.info("The test is to calculate a sliver of Mandelbrot with a max Iteration count of : $value")
+		logger.info("The test is running on $cores Threads/Cores simultaneously")
 		val data = Balancer.runSelfTest(
 			r, timeout, cycles, duration, cores,
 			wait, System.out
 		)
-		println("S means Singlecore Score; M means Multicore Score")
-		println(
+		logger.info("S means Singlecore Score; M means Multicore Score")
+		logger.info(
 			"B means Score is determined by performance in the first test;\nB2 means Score is determined by performance in the second Test"
 		)
-		println("s-b:" + data[0])
-		println("s-b2:" + data[1])
-		println("m-b:" + data[2])
-		println("m-b2:" + data[3])
+		logger.info("s-b:" + data[0])
+		logger.info("s-b2:" + data[1])
+		logger.info("m-b:" + data[2])
+		logger.info("m-b2:" + data[3])
 		//b2.runNetworkTest(new byte[] {5, 8, 2, 9}, new AddressPortTuple("localhost",
 		// 25555));
 	}
@@ -641,16 +647,16 @@ object BridgeCLI {
 			var uiLi: MutableList<String>? = null
 			if (isUIEnabled && ui) uiLi = getLog("Announce-Server $port")
 			val server = com.sterndu.data.transfer.secure.ServerSocket(port)
-			uiLi?.add("Running on Port ${server.localPort}") ?: println("Running on Port ${server.localPort}")
+			uiLi?.add("Running on Port ${server.localPort}") ?: logger.info("Running on Port ${server.localPort}")
 			while (System.`in`.available() == 0) {
 				val sock = server.accept()
 				sock.setHandle(0xa0.toByte()) { type, data ->
 					val date = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS").format(Instant.now())
-					uiLi?.add("[$date] ${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8)) ?: println("[$date] ${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
+					uiLi?.add("[$date] ${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8)) ?: logger.info("[$date] ${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
 					try {
 						sock.sendClose()
 					} catch (e: Exception) {
-						println("Socket already closed")
+						logger.finer("Socket already closed")
 					}
 					sock.close()
 				}
@@ -706,7 +712,7 @@ object BridgeCLI {
 							targetPort = iPort
 							return
 						} catch (e: NumberFormatException) {
-							System.err.println("$sPort is not valid Port number")
+							logger.warning("$sPort is not valid Port number")
 							return
 						}
 					}
@@ -719,7 +725,7 @@ object BridgeCLI {
 						targetPort = iPort
 						return
 					} catch (e: NumberFormatException) {
-						System.err.println("$sPort is not valid Port number")
+						logger.warning("$sPort is not valid Port number")
 						return
 					}
 				}
@@ -752,7 +758,7 @@ object BridgeCLI {
 				localPort = iPort
 				return
 			} catch (e: NumberFormatException) {
-				System.err.println("$port is not valid Port number")
+				logger.warning("$port is not valid Port number")
 				return
 			}
 			help()
@@ -770,7 +776,7 @@ object BridgeCLI {
 				this.port = iPort
 				return
 			} catch (e: NumberFormatException) {
-				System.err.println("$port is not valid Port number")
+				logger.warning("$port is not valid Port number")
 				return
 			}
 			help()
@@ -781,7 +787,7 @@ object BridgeCLI {
 				cycles = value.toLong()
 				return
 			} catch (e: java.lang.NumberFormatException) {
-				System.err.println("$value is not valid number")
+				logger.warning("$value is not valid number")
 				return
 			}
 			help()
@@ -791,7 +797,7 @@ object BridgeCLI {
 				duration = value.toLong()
 				return
 			} catch (e: java.lang.NumberFormatException) {
-				System.err.println("$value is not valid number")
+				logger.warning("$value is not valid number")
 				return
 			}
 			help()
@@ -801,7 +807,7 @@ object BridgeCLI {
 				longDuration = value.toLong()
 				return
 			} catch (e: java.lang.NumberFormatException) {
-				System.err.println("$value is not valid number")
+				logger.warning("$value is not valid number")
 				return
 			}
 			help()
@@ -811,7 +817,7 @@ object BridgeCLI {
 				timeout = value.toLong()
 				return
 			} catch (e: java.lang.NumberFormatException) {
-				System.err.println("$value is not valid number")
+				logger.warning("$value is not valid number")
 				return
 			}
 			help()
@@ -821,7 +827,7 @@ object BridgeCLI {
 				wait = value.toLong()
 				return
 			} catch (e: java.lang.NumberFormatException) {
-				System.err.println("$value is not valid number")
+				logger.warning("$value is not valid number")
 				return
 			}
 			help()
@@ -832,7 +838,7 @@ object BridgeCLI {
 				cores = value.toInt()
 				return
 			} catch (e: java.lang.NumberFormatException) {
-				System.err.println("$value is not valid number")
+				logger.warning("$value is not valid number")
 				return
 			}
 			help()

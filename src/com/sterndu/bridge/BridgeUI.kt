@@ -54,13 +54,17 @@ object BridgeUI {
 							else
 								ProcessBuilder("clear").inheritIO().start().waitFor()
 						} catch (e: InterruptedException) {
-							e.printStackTrace()
+							logger.log(Level.WARNING, "BridgeUI", e)
 						} catch (e: IOException) {
-							e.printStackTrace()
+							logger.log(Level.WARNING, "BridgeUI", e)
 						}
 						println(current!!.first.toString())
+						logger.info(current!!.first.toString())
 						val li = current!!.second
-						for (i in 0..49) if (li.size > i) println(li[i])
+						for (i in 0..49) if (li.size > i) {
+							println(li[i])
+							logger.info(li[i])
+						}
 						System.out.flush()
 						lastSize = li.size
 						lastHashCode = li.hashCode()
@@ -88,17 +92,17 @@ object BridgeUI {
 			try {
 				ProcessBuilder("cmd", "/c", "mode", "con", "lines=50").inheritIO().start().waitFor()
 			} catch (e: InterruptedException) {
-				e.printStackTrace()
+				logger.log(Level.WARNING, "BridgeUI", e)
 			} catch (e: IOException) {
-				e.printStackTrace()
+				logger.log(Level.WARNING, "BridgeUI", e)
 			}
 		} else {
 			try {
 				ProcessBuilder("printf", "'\\033[8;40;50t'").inheritIO().start().waitFor()
 			} catch (e: InterruptedException) {
-				e.printStackTrace()
+				logger.log(Level.WARNING, "BridgeUI", e)
 			} catch (e: IOException) {
-				e.printStackTrace()
+				logger.log(Level.WARNING, "BridgeUI", e)
 			}
 		}
 	}
