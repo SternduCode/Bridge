@@ -11,17 +11,12 @@ import com.sterndu.network.balancer.Tester
 import com.sterndu.util.Entry
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.net.ServerSocket
-import java.net.Socket
-import java.net.SocketException
+import java.net.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.time.Instant
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
-import java.util.logging.ConsoleHandler
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.util.logging.*
 import kotlin.system.exitProcess
 
 object BridgeCLI {
@@ -48,6 +43,7 @@ object BridgeCLI {
 				uiLi?.add("Running on port: " + locSocket.localPort) ?: logger.info("Running on port: " + locSocket.localPort)
 				while (System.`in`.available() == 0) {
 					val s = locSocket.accept()
+					logger.fine("${s.inetAddress}:${s.port} connected!")
 					Thread {
 						try {
 							val appendix = ("Connect" + localPort + "|"
@@ -61,19 +57,21 @@ object BridgeCLI {
 							hc.disableHandle()
 							hc.sock.setHandle(hc.type) { type: Byte, data: ByteArray ->
 								try {
-									logger.fine(String(data))
+									logger.finest("Adapter: " + String(data))
 									s.getOutputStream().write(data)
 									s.getOutputStream().flush()
 								} catch (e: IOException) {
 									try {
 										remove("RecvAdapterConnect$appendix")
 										remove("KillConnect$appendix")
-										try {
-											bc.sock.sendClose()
-										} catch (ignored: Exception) {
-											logger.finer("Socket already closed")
+										if (!bc.sock.isClosed) {
+											try {
+												bc.sock.sendClose()
+											} catch (ignored: Exception) {
+												logger.finer("Socket already closed")
+											}
+											bc.sock.close()
 										}
-										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
@@ -90,18 +88,21 @@ object BridgeCLI {
 											val read = s.getInputStream().read(bArr)
 											baos.write(bArr, 0 ,read)
 										}
+										logger.finest("Adapter: $baos")
 										hc.sock.sendData(hc.type, baos.toByteArray())
 									}
 								} catch (e: IOException) {
 									try {
 										remove("RecvAdapterConnect$appendix")
 										remove("KillConnect$appendix")
-										try {
-											bc.sock.sendClose()
-										} catch (ignored: Exception) {
-											logger.finer("Socket already closed")
+										if (!bc.sock.isClosed) {
+											try {
+												bc.sock.sendClose()
+											} catch (ignored: Exception) {
+												logger.finer("Socket already closed")
+											}
+											bc.sock.close()
 										}
-										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
@@ -148,6 +149,8 @@ object BridgeCLI {
 	 * Help.
 	 */
 	fun help() {
+		logger.handlers.filterIsInstance<ConsoleHandler>().onEach { it.level = Level.OFF }
+
 		logger.info("Usage: [[MODE] [OPTION]... ]...")
 		logger.info("")
 		logger.info("modes:")
@@ -182,6 +185,41 @@ object BridgeCLI {
 		logger.info("")
 		logger.info("You can add the option -v / --verbose  anywhere to enable debug output in all modes")
 		logger.info("")
+
+		println("Usage: [[MODE] [OPTION]... ]...")
+		println("")
+		println("modes:")
+		println("  connect")
+		println("  join")
+		println("  host")
+		println("  server")
+		println("  stresstest")
+		println("  announce-server")
+		println("  ping")
+		println("")
+		println(
+			"Inside the () there are all modes with which the option can be used, if the mode is followed with an ! it is mandatory in that mode"
+		)
+		println("")
+		println("options:")
+		println("  -s, --server ADDRESS       the bridge server it should connect to, can contain the port (connect!, join!, host!, ping!)")
+		println("  -p, --port NUMBER          the port on which the server is running/should run (connect, join, host, server, announce-server, ping)")
+		println("  -t, --target ADDRESS       the target server you want to connect to (connect!)")
+		println("  -c, --code CODE            the code that is displayed on the 'host' you want to connect to (join!)")
+		println("  -l, --local-port NUMBER    the port that should be used locally, in host mode it is the port that should be hosted," +
+				" in the other modes its the port you connect to (connect, join, host!)")
+		println("  -a, --announce ADDRESS     the address where the code, with which you can join the connection, will be sent to (host)")
+		println("  -e, --cycles NUMBER        how many cycles the stresstest should do in the cycles phase (default: 200) (stresstest)")
+		println("  -d, --duration NUMBER      how long in millis the stresstest should run in timed phase (default: 20000 (= 20sec)) (stresstest)")
+		println("      --long-duration NUMBER how long in millis the stresstest should run in long duration phase (default: 50000 (= 50sec)) (stresstest)")
+		println("      --timeout NUMBER       after what time in millis the stresstest is aborted (default: 80000 (= 80sec)) (stresstest)")
+		println("      --wait NUMBER          how long in millis the stresstest should wait between phases (default: 2000 (= 2sec)) (stresstest)")
+		println("  -x, --cores NUMBER         how many Thread/Cores the stresstest should use (default: all available (${Runtime.getRuntime().availableProcessors()})) (stresstest)")
+		println("  -r, --raw                  if selected, data sent will not be encrypted (ping)")
+		println("  -u, --ui                   show output in the ui (connect, join, host, server, announce-server)")
+		println("")
+		println("You can add the option -v / --verbose  anywhere to enable debug output in all modes")
+		println("")
 		exitProcess(0)
 	}
 
@@ -213,19 +251,12 @@ object BridgeCLI {
 					val announcePort = sp.last()
 					val announceLocal = announce.substring(0, announce.length - announcePort.length - 1)
 					val announceSocket = com.sterndu.data.transfer.secure.Socket(announceLocal, announcePort.toInt())
-					announceSocket.sendData(0xa0.toByte(), hc.code!!.toByteArray(Charsets.UTF_8))
 					while (!announceSocket.initialized) try {
 						Thread.sleep(5L)
 					} catch (e: Exception) {
 						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
-					try {
-						Thread.sleep(20L)
-					} catch (e: Exception) {
-						logger.log(Level.WARNING, "BridgeCLI", e)
-					}
-					announceSocket.sendClose()
-					announceSocket.close()
+					announceSocket.sendData(0xa0.toByte(), hc.code!!.toByteArray(Charsets.UTF_8))
 				} catch (e: Exception) {
 					logger.warning("$announce is not a correct hostname:port pair")
 				}
@@ -250,7 +281,7 @@ object BridgeCLI {
 										val read = lSock.getInputStream().read(b_arr)
 										baos.write(b_arr, 0, read)
 									}
-									logger.fine(baos.toString())
+									logger.finest("Adapter: $baos")
 									hc.normalConnector.sendData(baos.toByteArray())
 								}
 							} catch (e: IOException) {
@@ -295,7 +326,7 @@ object BridgeCLI {
 						logger.fine(addr.contentToString())
 						val dat = ByteArray(data.size - bb.position())
 						bb[dat]
-						logger.fine(String(dat))
+						logger.finest("Adapter: " + String(dat))
 						logger.fine(
 							connections.map { (key, value): Map.Entry<ByteArray, Socket> ->
 								Entry(key.contentToString(), value)
@@ -338,6 +369,7 @@ object BridgeCLI {
 				uiLi?.add("Running on port: " + ss.localPort) ?: logger.info("Running on port: " + ss.localPort)
 				while (System.`in`.available() == 0) {
 					val s = ss.accept()
+					logger.fine("${s.inetAddress}:${s.port} connected!")
 					Thread {
 						try {
 							val appendix = ("Connect" + localPort + "|"
@@ -350,7 +382,7 @@ object BridgeCLI {
 							}
 							hc.handle = { type: Byte, data: ByteArray ->
 								try {
-									logger.fine(String(data))
+									logger.finest("Adapter: " + String(data))
 									s.getOutputStream().write(data)
 									s.getOutputStream().flush()
 								} catch (e: IOException) {
@@ -363,6 +395,14 @@ object BridgeCLI {
 											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
+										if (!bc.sock.isClosed) {
+											try {
+												bc.sock.sendClose()
+											} catch (ignored: Exception) {
+												logger.finer("Socket already closed")
+											}
+											bc.sock.close()
+										}
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
@@ -379,18 +419,21 @@ object BridgeCLI {
 											val read = s.getInputStream().read(bArr)
 											baos.write(bArr, 0, read)
 										}
+										logger.finest("Adapter: $baos")
 										hc.sendData(hc.type, baos.toByteArray())
 									}
 								} catch (e: IOException) {
 									try {
 										remove("RecvAdapterConnect$appendix")
 										remove("KillConnect$appendix")
-										try {
-											bc.sock.sendClose()
-										} catch (ignored: Exception) {
-											logger.finer("Socket already closed")
+										if (!bc.sock.isClosed) {
+											try {
+												bc.sock.sendClose()
+											} catch (ignored: Exception) {
+												logger.finer("Socket already closed")
+											}
+											bc.sock.close()
 										}
-										bc.sock.close()
 										s.close()
 									} catch (ex: IOException) {
 										ex.initCause(e)
@@ -588,6 +631,7 @@ object BridgeCLI {
 				"-v", "--verbose" -> {
 					System.setProperty("debug", "true")
 					logger.handlers.filterIsInstance<ConsoleHandler>().onEach { it.level = Level.FINE }
+					logger.handlers.filterIsInstance<FileHandler>().onEach { it.level = Level.ALL }
 				}
 
 				else -> help()
@@ -606,12 +650,14 @@ object BridgeCLI {
 		} else {
 			sock.ping()
 		}
-		try {
-			sock.sendClose()
-		} catch (e: SocketException) {
-			logger.finer("Socket already closed")
+		if (!sock.isClosed) {
+			try {
+				sock.sendClose()
+			} catch (e: SocketException) {
+				logger.finer("Socket already closed")
+			}
+			sock.close()
 		}
-		sock.close()
 		logger.info("Ping to $server:$port took ${millis}ms")
 	}
 
@@ -651,15 +697,19 @@ object BridgeCLI {
 			while (System.`in`.available() == 0) {
 				val sock = server.accept()
 				sock.setHandle(0xa0.toByte()) { type, data ->
-					val date = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS").format(Instant.now())
-					uiLi?.add("[$date] ${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8)) ?: logger.info("[$date] ${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
-					try {
-						sock.sendClose()
-					} catch (e: Exception) {
-						logger.finer("Socket already closed")
+					val date = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS"))
+					uiLi?.add("[$date] ${sock.inetAddress.hostAddress}/${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
+						?: logger.info("[$date] ${sock.inetAddress.hostAddress}/${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
+					if (!sock.isClosed) {
+						try {
+							sock.sendClose()
+						} catch (e: Exception) {
+							logger.finer("Socket already closed")
+						}
+						sock.close()
 					}
-					sock.close()
 				}
+				logger.info(sock.messageCount.toString())
 			}
 		}.start()
 	}

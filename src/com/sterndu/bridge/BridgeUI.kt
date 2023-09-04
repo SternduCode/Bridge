@@ -98,7 +98,7 @@ object BridgeUI {
 			}
 		} else {
 			try {
-				ProcessBuilder("printf", "'\\033[8;40;50t'").inheritIO().start().waitFor()
+				ProcessBuilder("printf", "'\\033[8;50;80t'").inheritIO().start().waitFor()
 			} catch (e: InterruptedException) {
 				logger.log(Level.WARNING, "BridgeUI", e)
 			} catch (e: IOException) {

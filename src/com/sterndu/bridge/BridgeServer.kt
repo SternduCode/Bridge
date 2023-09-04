@@ -77,7 +77,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 				val s = serverSocket.accept()
 				if (s != null) {
 
-					s.setupPeriodicInternalPing()
+					s.setupPeriodicInternalPing(1000)
 
 					// Host
 					s.setHandle(1.toByte()) { type: Byte, data: ByteArray ->
@@ -93,7 +93,8 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						clis[s] = cli
 						hosts[out] = s
 						try {
-							s.sendData(1.toByte(), value)
+							if (!s.isClosed)
+								s.sendData(1.toByte(), value)
 						} catch (e: SocketException) {
 							e.printStackTrace()
 						}
@@ -170,11 +171,13 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							val port = buff.getInt()
 							val conn = java.net.Socket(String(domain, Charsets.UTF_8), port)
 							s.setHandle(4.toByte()) { typ: Byte, dat: ByteArray ->
-								try {
-									conn.getOutputStream().write(dat)
-									conn.getOutputStream().flush()
-								} catch (e: IOException) {
-									e.printStackTrace()
+								if (!conn.isClosed) {
+									try {
+										conn.getOutputStream().write(dat)
+										conn.getOutputStream().flush()
+									} catch (e: IOException) {
+										e.printStackTrace()
+									}
 								}
 							}
 							val appendix = String(domain) + ":" + port + "|" + s.inetAddress.hostAddress + ":" + s.port
@@ -187,7 +190,8 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 											val read = conn.getInputStream().read(bArr)
 											baos.write(bArr, 0, read)
 										}
-										s.sendData(4.toByte(), baos.toByteArray())
+										if (!s.isClosed)
+											s.sendData(4.toByte(), baos.toByteArray())
 									}
 								} catch (e: SocketException) {
 									if ("Socket is closed" != e.message) {
@@ -215,7 +219,8 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							}, "KillConnect$appendix")
 						} catch (e: IOException) {
 							try {
-								s.sendData(2.toByte(), ByteArray(0))
+								if (!s.isClosed)
+									s.sendData(2.toByte(), ByteArray(0))
 							} catch (e1: SocketException) {
 								e1.printStackTrace()
 							}
@@ -269,7 +274,8 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 								}
 							}, "KillJoin$appendix")
 						} else try {
-							s.sendData(3.toByte(), ByteArray(0))
+							if (!s.isClosed)
+								s.sendData(3.toByte(), ByteArray(0))
 						} catch (e: SocketException) {
 							e.printStackTrace()
 						}
