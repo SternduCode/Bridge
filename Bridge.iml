@@ -13,4 +13,7 @@
     <orderEntry type="module" module-name="Util" />
     <orderEntry type="module" module-name="Balancer" />
   </component>
+  <component name="SonarLintModuleSettings">
+    <option name="uniqueId" value="9358fdc8-fb62-4ce2-acea-c8e489dd35ae" />
+  </component>
 </module>
