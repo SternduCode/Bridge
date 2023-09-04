@@ -389,12 +389,6 @@ object BridgeCLI {
 									try {
 										remove("RecvAdapterConnect$appendix")
 										remove("KillConnect$appendix")
-										try {
-											bc.sock.sendClose()
-										} catch (ignored: Exception) {
-											logger.finer("Socket already closed")
-										}
-										bc.sock.close()
 										if (!bc.sock.isClosed) {
 											try {
 												bc.sock.sendClose()
