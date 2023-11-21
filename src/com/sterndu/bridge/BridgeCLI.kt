@@ -632,6 +632,53 @@ object BridgeCLI {
 			}
 		}
 		argCollector?.run()
+		add(Runnable {
+			if (System.`in`.available() > 0) {
+				var lastByte = 0
+				val baos = ByteArrayOutputStream()
+				while (System.`in`.available() > 0 && lastByte != 10 && lastByte != 13) // 10 = '\n' and 13 = '\r'
+					baos.write(System.`in`.read().also { lastByte = it })
+
+				var string = String(baos.toByteArray(), Charsets.UTF_8)
+				string = string.replace('\n', '\u0000').replace('\r', '\u0000').replace("\u0000", "")
+				handleInteractiveInput(string)
+			}
+		}, "InteractiveInput", 100)
+	}
+
+	private fun handleInteractiveInput(input: String) {
+		val options = arrayOf("help", "printSockets", "printThreads", "exit")
+
+		if (input.isNotBlank()) {
+			if (options.contains(input)) {
+                if (input == "printSockets") {
+	                val sockets = com.sterndu.data.transfer.basic.Socket.allSockets
+	                println("${sockets.size} Sockets created")
+                    val out = sockets.mapIndexed { index, (socket, stack) ->
+						"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()} creationStack=${stack.contentToString()}"
+                    }
+	                out.forEach {
+						println(it)
+	                }
+                } else if (input == "printThreads") {
+					val threads = Thread.getAllStackTraces().keys.toList()
+					println("${threads.size} Threads running")
+	                for (index in threads.indices) {
+						val thread = threads[index]
+		                try {
+			                println("$index: [${thread.name}] ${thread.state} ${thread.priority} ${thread.isDaemon} ${if (thread.stackTrace.size > 0) thread.stackTrace.copyOfRange(1, 2.coerceAtMost(thread.stackTrace.size)).contentToString() else "No stack trace available"}")						} catch (e: Exception) {
+							println(e.message)
+						}
+	                }
+                } else if (input == "exit") {
+                    exitProcess(0)
+                } else if (input == "help") {
+                    println("All available options are: ${options.contentToString()}")
+                }
+            } else {
+                logger.warning("Unknown command: $input")
+            }
+		}
 	}
 
 	private fun ping(server: String, port: Int, raw: Boolean) {
