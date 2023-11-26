@@ -60,7 +60,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 		log?.add("Server init")
 		try {
 			serverSocket.soTimeout = 500
-			while (System.`in`.available() == 0) try {
+			while (true) try {
 				if (log != null) {
 					log[0] = "Main Loop"
 					val i = AtomicInteger(1)
