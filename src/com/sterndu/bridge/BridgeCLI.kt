@@ -647,30 +647,40 @@ object BridgeCLI {
 
 		if (input.isNotBlank()) {
 			if (options.contains(input)) {
-                if (input == "printSockets") {
-	                val sockets = com.sterndu.data.transfer.basic.Socket.allSockets
-	                println("${sockets.size} Sockets created")
-                    val out = sockets.mapIndexed { index, (socket, stack) ->
-						"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()} creationStack=${stack.contentToString()}"
-                    }
-	                out.forEach {
-						println(it)
-	                }
-                } else if (input == "printThreads") {
-					val threads = Thread.getAllStackTraces().keys.toList()
-					println("${threads.size} Threads running")
-	                for (index in threads.indices) {
-						val thread = threads[index]
-		                try {
-			                println("$index: [${thread.name}] ${thread.state} ${thread.priority} ${thread.isDaemon} ${if (thread.stackTrace.size > 0) thread.stackTrace.copyOfRange(1, 2.coerceAtMost(thread.stackTrace.size)).contentToString() else "No stack trace available"}")						} catch (e: Exception) {
-							println(e.message)
+				when (input) {
+					"printSockets" -> {
+						val sockets = com.sterndu.data.transfer.basic.Socket.allSockets
+						println("${sockets.size} Sockets created")
+						val out = sockets.mapIndexed { index, (socket, stack) ->
+							"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()}" +
+									" creationStack=${stack.contentToString()}"
 						}
-	                }
-                } else if (input == "exit") {
-                    exitProcess(0)
-                } else if (input == "help") {
-                    println("All available options are: ${options.contentToString()}")
-                }
+						out.forEach {
+							println(it)
+						}
+					}
+					"printThreads" -> {
+						val threads = Thread.getAllStackTraces().keys.toList()
+						println("${threads.size} Threads running")
+						for (index in threads.indices) {
+							val thread = threads[index]
+							try {
+								println("$index: [${thread.name}] ${thread.state} ${thread.priority} ${thread.isDaemon} ${
+									if (thread.stackTrace.isNotEmpty()) thread.stackTrace.copyOfRange(1, thread.stackTrace.size.coerceAtMost(2)).contentToString()
+									else "No stack trace available"
+								}")
+							} catch (e: Exception) {
+								println(e.message)
+							}
+						}
+					}
+					"exit" -> {
+						exitProcess(0)
+					}
+					"help" -> {
+						println("All available options are: ${options.contentToString()}")
+					}
+				}
             } else {
                 logger.warning("Unknown command: $input")
             }
@@ -713,7 +723,7 @@ object BridgeCLI {
 			r, timeout, cycles, duration, cores,
 			wait, System.out
 		)
-		logger.info("S means Singlecore Score; M means Multicore Score")
+		logger.info("S means SingleCore Score; M means MultiCore Score")
 		logger.info(
 			"B means Score is determined by performance in the first test;\nB2 means Score is determined by performance in the second Test"
 		)
@@ -763,7 +773,7 @@ object BridgeCLI {
 		protected var wait = 2000L
 		protected var cores = Runtime.getRuntime().availableProcessors()
 
-		var raw = false;
+		var raw = false
 
 		var code = ""
 		var server = ""
@@ -852,8 +862,6 @@ object BridgeCLI {
 		}
 
 		/**
-		 * Setport.
-		 *
 		 * @param port the new port
 		 */
 		fun setPort(port: String) {

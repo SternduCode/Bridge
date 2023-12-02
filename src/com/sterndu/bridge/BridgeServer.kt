@@ -18,7 +18,6 @@ import java.nio.ByteOrder
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Level
-import kotlin.jvm.Throws
 
 /**
  * Instantiates a new bridge server.
@@ -36,8 +35,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 	/** The hosts.  */
 	private val hosts: MutableMap<String, Socket> = HashMap()
 
-	/** The clis.  */
-	private val clis: MutableMap<Socket, MutableMap<ByteArray, Socket>> = HashMap()
+	private val clientsMap: MutableMap<Socket, MutableMap<ByteArray, Socket>> = HashMap()
 
 	init {
 		try {
@@ -64,8 +62,8 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 				if (log != null) {
 					log[0] = "Main Loop"
 					val i = AtomicInteger(1)
-					clis.forEach { (so: Socket, cli: Map<ByteArray, Socket>) ->
-						val out = i.get().toString() + " " + so + " " + cli.values + " " + so.getAveragePingTime() + "ms " + cli.values.map { it.getAveragePingTime() }
+					clientsMap.forEach { (so: Socket, clients: Map<ByteArray, Socket>) ->
+						val out = i.get().toString() + " " + so + " " + clients.values + " " + so.getAveragePingTime() + "ms " + clients.values.map { it.getAveragePingTime() }
 						if (log.size <= i.get()) {
 							log.add(out)
 						} else {
@@ -73,7 +71,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						}
 						i.getAndIncrement()
 					}
-					if (clis.isEmpty()) if (log.size <= i.get()) {
+					if (clientsMap.isEmpty()) if (log.size <= i.get()) {
 						log.add("")
 					} else {
 						log[i.get()] = ""
@@ -84,7 +82,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 				s.setupPeriodicInternalPing(1000)
 
 				// Host
-				s.setHandle(1.toByte()) { type: Byte, data: ByteArray ->
+				s.setHandle(1.toByte()) { _: Byte, _: ByteArray ->
 					var out: String
 					var value: ByteArray
 					do {
@@ -93,8 +91,8 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						r.nextBytes(value)
 						out = String(Base64.getEncoder().encode(value), Charsets.UTF_8)
 					} while (hosts.containsKey(out)) // Maybe Error
-					val cli: MutableMap<ByteArray, Socket> = HashMap()
-					clis[s] = cli
+					val clients: MutableMap<ByteArray, Socket> = HashMap()
+					clientsMap[s] = clients
 					hosts[out] = s
 					try {
 						if (!s.isClosed)
@@ -102,9 +100,9 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 					} catch (e: SocketException) {
 						e.printStackTrace()
 					}
-					s.setHandle(6.toByte()) { typ: Byte, dat: ByteArray ->
-						if (typ.toInt() == 2) try {
-							val it: MutableIterator<Map.Entry<ByteArray, Socket>> = cli.entries.iterator()
+					s.setHandle(6.toByte()) { type: Byte, dat: ByteArray ->
+						if (type.toInt() == 2) try {
+							val it: MutableIterator<Map.Entry<ByteArray, Socket>> = clients.entries.iterator()
 							while (it.hasNext()) {
 								val (key, value1) = it.next()
 								if (key.contentEquals(dat)) {
@@ -117,24 +115,24 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							e.printStackTrace()
 						}
 					}
-					s.setHandle(5.toByte()) { typ: Byte, dat: ByteArray ->
+					s.setHandle(5.toByte()) { _: Byte, dat: ByteArray ->
 						val bb = ByteBuffer.wrap(dat)
-						val typee = bb.get()
+						val type = bb.get()
 						val addrLength = bb.getInt()
 						val addr = ByteArray(addrLength)
 						bb[addr]
 						val remData = ByteArray(dat.size - addrLength - 4)
 						bb[remData, 1, remData.size - 1]
-						remData[0] = typee
+						remData[0] = type
 						val wild = addr.contentEquals(BridgeUtil.WILDCARD)
 						if ("true" == System.getProperty("debug")) println(String(remData))
 						if ("true" == System.getProperty("debug")) println(addr.contentToString())
 						if ("true" == System.getProperty("debug")) println(
-							cli.map { (addr, value1): Map.Entry<ByteArray, Socket> ->
+							clients.map { (addr, value1): Map.Entry<ByteArray, Socket> ->
 								Entry(addr.contentToString(), value1)
 							}.toList()
 						)
-						cli.forEach { (addrL: ByteArray, ss: Socket) ->
+						clients.forEach { (addrL: ByteArray, ss: Socket) ->
 							if (wild || addr.contentEquals(addrL)) try {
 								ss.sendData(5.toByte(), remData)
 							} catch (e: SocketException) {
@@ -142,10 +140,12 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							}
 						}
 					}
-					s.setHandle(7.toByte()) { typ: Byte, dat: ByteArray ->
+					s.setHandle(7.toByte()) { _: Byte, ipData: ByteArray ->
 						try {
-							cli[dat]!!.sendClose()
-							cli.remove(dat)
+							clients[ipData]?.let {
+								it.sendClose()
+								clients.remove(ipData)
+							}
 						} catch (e: SocketException) {
 							e.printStackTrace()
 						}
@@ -153,17 +153,17 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 					val appendix = out + "|" + s.inetAddress.hostAddress + ":" + s.port
 					add(Runnable {
 						if (!s.isConnected || s.isClosed) try {
-							for ((_, value1) in cli) {
+							for ((_, value1) in clients) {
 								value1.sendClose()
 								value1.close()
 							}
-							clis.remove(s)
+							clientsMap.remove(s)
 							hosts.remove(out)
-							remove("KillHost$appendix")
+							remove("KillHost $appendix")
 						} catch (e: IOException) {
 							e.printStackTrace()
 						}
-					}, "KillHost$appendix")
+					}, "KillHost $appendix")
 				}
 				// Connect
 				s.setHandle(2.toByte()) { type: Byte, data: ByteArray ->
@@ -242,7 +242,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						val bb = ByteBuffer.wrap(addr).order(ByteOrder.BIG_ENDIAN)
 						bb.put(addrIP)
 						bb.putInt(s.port)
-						clis[ss]!![addr] = s
+						clientsMap[ss]!![addr] = s
 						try {
 							val dat = ByteArray(addr.size + 1)
 							val bba = ByteBuffer.wrap(dat).order(ByteOrder.BIG_ENDIAN)
@@ -274,7 +274,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 								bba.put(0.toByte())
 								bba.put(addr)
 								if (ss.isConnected && !ss.isClosed) ss.sendData(6.toByte(), dat)
-								clis[ss]!!.remove(addr)
+								clientsMap[ss]!!.remove(addr)
 								remove("KillJoin$appendix")
 							} catch (e: IOException) {
 								e.printStackTrace()

@@ -2,8 +2,6 @@
 package com.sterndu.bridge
 
 import com.sterndu.multicore.LoggingUtil
-import java.io.IOException
-import java.nio.ByteBuffer
 import kotlin.system.exitProcess
 
 object BridgeTester {

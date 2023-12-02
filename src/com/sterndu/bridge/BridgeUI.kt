@@ -4,11 +4,8 @@ package com.sterndu.bridge
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater
 import java.io.IOException
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.logging.ConsoleHandler
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.util.logging.*
 
 object BridgeUI {
 
@@ -26,13 +23,18 @@ object BridgeUI {
 	private var lastSize = 0
 	private var lastHashCode = 0
 
-	private val logger: Logger
+	private val logger: Logger = LoggingUtil.getLogger("BridgeUI")
+
+	/** The Constant showTime.  */
+	private const val SHOWTIME = 8000L
+
+	@JvmStatic
+	val isUIEnabled = true
 
 	/**
 	 * Instantiates a new bridge UI.
 	 */
 	init {
-		logger = LoggingUtil.getLogger("BridgeUI")
 		if (isUIEnabled) {
 			it = logs.entries.iterator()
 			Updater.add(Runnable {
@@ -41,7 +43,7 @@ object BridgeUI {
 					it = logs.entries.iterator()
 					lastSize = 0
 					lastHashCode = 0
-				} else if (System.currentTimeMillis() - currentTime >= showTime) {
+				} else if (System.currentTimeMillis() - currentTime >= SHOWTIME) {
 					current = localIt.next().toPair()
 					currentTime = System.currentTimeMillis()
 					lastSize = 0
@@ -84,7 +86,7 @@ object BridgeUI {
 	private fun init() {
 		logger.handlers.filterIsInstance<ConsoleHandler>().onEach { it.level = Level.OFF }
 		if (checkOsWindows()) {
-			// tets ps
+			// test ps
 			// run (Get-Host).ui.rawui.windowsize
 			// if error do
 			// mode con lines=50
@@ -123,12 +125,6 @@ object BridgeUI {
 		logs[obj] = li
 		return li
 	}
-
-		/** The Constant showTime.  */
-		private const val showTime = 8000L
-		@JvmStatic
-		val isUIEnabled: Boolean
-			get() = true
 
 		/**
 		 * The main method.
