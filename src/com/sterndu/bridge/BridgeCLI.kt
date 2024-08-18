@@ -8,7 +8,6 @@ import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
 import com.sterndu.network.balancer.Balancer
 import com.sterndu.network.balancer.Tester
-import com.sterndu.util.Entry
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.*
@@ -327,7 +326,7 @@ object BridgeCLI {
 						logger.finest("Adapter: " + String(dat))
 						logger.fine(
 							connections.map { (key, value): Map.Entry<ByteArray, Socket> ->
-								Entry(key.contentToString(), value)
+								key.contentToString() to value
 							}.toString()
 						)
 						logger.fine(connections[addr].toString())
@@ -473,6 +472,7 @@ object BridgeCLI {
 	 */
 	@JvmStatic
 	fun main(args: Array<String>) {
+		LoggingUtil.setLogToFile()
 		logger = LoggingUtil.getLogger("BridgeCLI")
 		if (args.isEmpty()) help()
 		var argCollector: ArgCollector? = null

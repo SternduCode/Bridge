@@ -8,7 +8,6 @@ import com.sterndu.data.transfer.secure.Socket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
-import com.sterndu.util.Entry
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.SocketException
@@ -129,7 +128,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						if ("true" == System.getProperty("debug")) println(addr.contentToString())
 						if ("true" == System.getProperty("debug")) println(
 							clients.map { (addr, value1): Map.Entry<ByteArray, Socket> ->
-								Entry(addr.contentToString(), value1)
+								addr.contentToString() to value1
 							}.toList()
 						)
 						clients.forEach { (addrL: ByteArray, ss: Socket) ->
