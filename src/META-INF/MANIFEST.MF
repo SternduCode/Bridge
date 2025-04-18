@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: com.sterndu.bridge.BridgeCLI
-Class-Path: lib/kotlin-stdlib-1.9.21.jar
+Class-Path: lib/kotlin-stdlib-2.0.21.jar lib/annotations-13.0.jar
 
