@@ -25,6 +25,7 @@ dependencies {
 	implementation(project(":Multicore"))
 	implementation(project(":Balancer"))
 	implementation(project(":DataTransfer"))
+	implementation(project(":Encryption"))
 }
 
 tasks.named("compileJava", JavaCompile::class.java) {

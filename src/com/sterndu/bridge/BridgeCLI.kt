@@ -65,7 +65,7 @@ object BridgeCLI {
 									if (!bc.sock.isClosed) {
 										try {
 											bc.sock.sendClose()
-										} catch (ignored: Exception) {
+										} catch (_: Exception) {
 											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
@@ -96,7 +96,7 @@ object BridgeCLI {
 									if (!bc.sock.isClosed) {
 										try {
 											bc.sock.sendClose()
-										} catch (ignored: Exception) {
+										} catch (_: Exception) {
 											logger.finer("Socket already closed")
 										}
 										bc.sock.close()
@@ -651,7 +651,7 @@ object BridgeCLI {
 					"printSockets" -> {
 						val sockets = com.sterndu.data.transfer.basic.Socket.allSockets
 						println("${sockets.size} Sockets created")
-						val out = sockets.mapIndexed { index, (socket, stack) ->
+						val out = sockets.entries.mapIndexed { index, (socket, stack) ->
 							"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()}" +
 									" creationStack=${stack.contentToString()}"
 						}

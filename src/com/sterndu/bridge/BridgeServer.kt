@@ -78,7 +78,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 				}
 				val s = serverSocket.accept()
 
-				s.setupPeriodicInternalPing(1000)
+				s.setupPeriodicPing(1000)
 
 				// Host
 				s.setHandle(1.toByte()) { _: Byte, _: ByteArray ->
