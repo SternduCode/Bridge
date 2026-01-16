@@ -693,7 +693,7 @@ object BridgeCLI {
 			Thread.sleep(1)
 		}
 		val millis = if (raw) {
-			sock.internalPing()
+			sock.rawPing()
 		} else {
 			sock.ping()
 		}
