@@ -10,12 +10,17 @@ import com.sterndu.network.balancer.Balancer
 import com.sterndu.network.balancer.Tester
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.net.*
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.SocketException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.logging.*
+import java.util.logging.ConsoleHandler
+import java.util.logging.FileHandler
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.system.exitProcess
 
 object BridgeCLI {
@@ -740,13 +745,13 @@ object BridgeCLI {
 			var uiLi: MutableList<String>? = null
 			if (isUIEnabled && ui) uiLi = getLog("Announce-Server $port")
 			val server = com.sterndu.data.transfer.secure.ServerSocket(port)
-			uiLi?.add("Running on Port ${server.localPort}") ?: logger.info("Running on Port ${server.localPort}")
+			uiLi?.add("Running on Port ${server.serverSocket.localPort}") ?: logger.info("Running on Port ${server.serverSocket.localPort}")
 			while (System.`in`.available() == 0) {
 				val sock = server.accept()
 				sock.setHandle(0xa0.toByte()) { type, data ->
 					val date = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS"))
-					uiLi?.add("[$date] ${sock.inetAddress.hostAddress}/${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
-						?: logger.info("[$date] ${sock.inetAddress.hostAddress}/${sock.inetAddress.hostName} " + String(data, Charsets.UTF_8))
+					uiLi?.add("[$date] ${sock.socket.inetAddress} " + String(data, Charsets.UTF_8))
+						?: logger.info("[$date] ${sock.socket.inetAddress} " + String(data, Charsets.UTF_8))
 					if (!sock.isClosed) {
 						try {
 							sock.sendClose()

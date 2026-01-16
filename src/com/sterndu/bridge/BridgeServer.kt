@@ -48,7 +48,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 	 * Start. TODO ui
 	 */
 	fun start() {
-		logger.info("Starting BridgeServer on port ${serverSocket.localPort}")
+		logger.info("Starting BridgeServer on port ${serverSocket.serverSocket.localPort}")
 		val log = if (ui && isUIEnabled) {
 			getLog("Server")
 		} else {
@@ -56,7 +56,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 		}
 		log?.add("Server init")
 		try {
-			serverSocket.soTimeout = 500
+			serverSocket.serverSocket.soTimeout = 500
 			while (true) try {
 				if (log != null) {
 					log[0] = "Main Loop"
@@ -149,7 +149,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							e.printStackTrace()
 						}
 					}
-					val appendix = out + "|" + s.inetAddress.hostAddress + ":" + s.port
+					val appendix = out + "|" + s.name()
 					add(Runnable {
 						if (!s.isConnected || s.isClosed) try {
 							for ((_, value1) in clients) {
@@ -186,7 +186,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 								}
 							}
 						}
-						val appendix = String(domain) + ":" + port + "|" + s.inetAddress.hostAddress + ":" + s.port
+						val appendix = String(domain) + ":" + port + "|" + s.name()
 						add(Runnable {
 							try {
 								if (conn.getInputStream().available() > 0) {
@@ -236,11 +236,11 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 				s.setHandle(3.toByte()) { type: Byte, data: ByteArray ->
 					if (hosts.containsKey(String(data))) {
 						val ss = hosts[String(data)]!!
-						val addrIP = s.inetAddress.address
+						val addrIP = s.socket.inetAddress.address
 						val addr = ByteArray(addrIP.size + 4)
 						val bb = ByteBuffer.wrap(addr).order(ByteOrder.BIG_ENDIAN)
 						bb.put(addrIP)
-						bb.putInt(s.port)
+						bb.putInt(s.socket.port)
 						clientsMap[ss]!![addr] = s
 						try {
 							val dat = ByteArray(addr.size + 1)
@@ -265,7 +265,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 								e.printStackTrace()
 							}
 						}
-						val appendix = String(data) + "|" + s.inetAddress.hostAddress + ":" + s.port
+						val appendix = String(data) + "|" + s.name()
 						add(Runnable {
 							if (!s.isConnected || s.isClosed) try {
 								val dat = ByteArray(addr.size + 1)
