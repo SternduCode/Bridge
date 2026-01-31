@@ -5,7 +5,9 @@ import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.logging.*
+import java.util.logging.ConsoleHandler
+import java.util.logging.Level
+import java.util.logging.Logger
 
 object BridgeUI {
 
@@ -37,43 +39,43 @@ object BridgeUI {
 	init {
 		if (isUIEnabled) {
 			it = logs.entries.iterator()
-			Updater.add(Runnable {
-				val localIt = it!!
-				if (!localIt.hasNext()) {
-					it = logs.entries.iterator()
-					lastSize = 0
-					lastHashCode = 0
-				} else if (System.currentTimeMillis() - currentTime >= SHOWTIME) {
-					current = localIt.next().toPair()
-					currentTime = System.currentTimeMillis()
-					lastSize = 0
-					lastHashCode = 0
-				} else {
-					if (lastSize != current!!.second.size || lastHashCode != current!!.second.hashCode()) {
-						try {
-							if (checkOsWindows())
-								ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor()
-							else
-								ProcessBuilder("clear").inheritIO().start().waitFor()
-						} catch (e: InterruptedException) {
-							logger.log(Level.WARNING, "BridgeUI", e)
-						} catch (e: IOException) {
-							logger.log(Level.WARNING, "BridgeUI", e)
-						}
-						println(current!!.first.toString())
-						logger.info(current!!.first.toString())
-						val li = current!!.second
-						for (i in 0..49) if (li.size > i) {
-							println(li[i])
-							logger.info(li[i])
-						}
-						System.out.flush()
-						lastSize = li.size
-						lastHashCode = li.hashCode()
-					}
-				}
-			}, "Bridge-UI", 1000)
-		}
+			Updater.add("Bridge-UI", 1000) {
+                val localIt = it!!
+                if (!localIt.hasNext()) {
+                    it = logs.entries.iterator()
+                    lastSize = 0
+                    lastHashCode = 0
+                } else if (System.currentTimeMillis() - currentTime >= SHOWTIME) {
+                    current = localIt.next().toPair()
+                    currentTime = System.currentTimeMillis()
+                    lastSize = 0
+                    lastHashCode = 0
+                } else {
+                    if (lastSize != current!!.second.size || lastHashCode != current!!.second.hashCode()) {
+                        try {
+                            if (checkOsWindows())
+                                ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor()
+                            else
+                                ProcessBuilder("clear").inheritIO().start().waitFor()
+                        } catch (e: InterruptedException) {
+                            logger.log(Level.WARNING, "BridgeUI", e)
+                        } catch (e: IOException) {
+                            logger.log(Level.WARNING, "BridgeUI", e)
+                        }
+                        println(current!!.first.toString())
+                        logger.info(current!!.first.toString())
+                        val li = current!!.second
+                        for (i in 0..49) if (li.size > i) {
+                            println(li[i])
+                            logger.info(li[i])
+                        }
+                        System.out.flush()
+                        lastSize = li.size
+                        lastHashCode = li.hashCode()
+                    }
+                }
+            }
+        }
 	}
 
 	/**

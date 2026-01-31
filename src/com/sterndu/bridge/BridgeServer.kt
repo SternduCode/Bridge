@@ -150,20 +150,20 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						}
 					}
 					val appendix = out + "|" + s.name()
-					add(Runnable {
-						if (!s.isConnected || s.isClosed) try {
-							for ((_, value1) in clients) {
-								value1.sendClose()
-								value1.close()
-							}
-							clientsMap.remove(s)
-							hosts.remove(out)
-							remove("KillHost $appendix")
-						} catch (e: IOException) {
-							e.printStackTrace()
-						}
-					}, "KillHost $appendix")
-				}
+					add("KillHost $appendix") {
+                        if (!s.isConnected || s.isClosed) try {
+                            for ((_, value1) in clients) {
+                                value1.sendClose()
+                                value1.close()
+                            }
+                            clientsMap.remove(s)
+                            hosts.remove(out)
+                            remove("KillHost $appendix")
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
 				// Connect
 				s.setHandle(2.toByte()) { type: Byte, data: ByteArray ->
 					try {
@@ -187,43 +187,43 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							}
 						}
 						val appendix = String(domain) + ":" + port + "|" + s.name()
-						add(Runnable {
-							try {
-								if (conn.getInputStream().available() > 0) {
-									val baos = ByteArrayOutputStream()
-									while (conn.getInputStream().available() > 0 && baos.size() <= 1073741824) {
-										val bArr = ByteArray(conn.getInputStream().available().coerceAtMost(1073741824 - baos.size()))
-										val read = conn.getInputStream().read(bArr)
-										baos.write(bArr, 0, read)
-									}
-									if (!s.isClosed)
-										s.sendData(4.toByte(), baos.toByteArray())
-								}
-							} catch (e: SocketException) {
-								if ("Socket is closed" != e.message) {
-									e.printStackTrace()
-								}
-							} catch (e: IOException) {
-								e.printStackTrace()
-							}
-						}, "RecvAdapterConnect$appendix")
-						add(Runnable {
-							if (!s.isConnected || s.isClosed) try {
-								conn.close()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} catch (e: IOException) {
-								e.printStackTrace()
-							} else if (!conn.isConnected || conn.isClosed) try {
-								s.sendClose()
-								s.close()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} catch (e: IOException) {
-								e.printStackTrace()
-							}
-						}, "KillConnect$appendix")
-					} catch (e: IOException) {
+						add("RecvAdapterConnect$appendix") {
+                            try {
+                                if (conn.getInputStream().available() > 0) {
+                                    val baos = ByteArrayOutputStream()
+                                    while (conn.getInputStream().available() > 0 && baos.size() <= 1073741824) {
+                                        val bArr = ByteArray(conn.getInputStream().available().coerceAtMost(1073741824 - baos.size()))
+                                        val read = conn.getInputStream().read(bArr)
+                                        baos.write(bArr, 0, read)
+                                    }
+                                    if (!s.isClosed)
+                                        s.sendData(4.toByte(), baos.toByteArray())
+                                }
+                            } catch (e: SocketException) {
+                                if ("Socket is closed" != e.message) {
+                                    e.printStackTrace()
+                                }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
+                        add("KillConnect$appendix") {
+                            if (!s.isConnected || s.isClosed) try {
+                                conn.close()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            } else if (!conn.isConnected || conn.isClosed) try {
+                                s.sendClose()
+                                s.close()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
+                    } catch (e: IOException) {
 						try {
 							if (!s.isClosed)
 								s.sendData(2.toByte(), ByteArray(0))
@@ -266,20 +266,20 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 							}
 						}
 						val appendix = String(data) + "|" + s.name()
-						add(Runnable {
-							if (!s.isConnected || s.isClosed) try {
-								val dat = ByteArray(addr.size + 1)
-								val bba = ByteBuffer.wrap(dat).order(ByteOrder.BIG_ENDIAN)
-								bba.put(0.toByte())
-								bba.put(addr)
-								if (ss.isConnected && !ss.isClosed) ss.sendData(6.toByte(), dat)
-								clientsMap[ss]!!.remove(addr)
-								remove("KillJoin$appendix")
-							} catch (e: IOException) {
-								e.printStackTrace()
-							}
-						}, "KillJoin$appendix")
-					} else try {
+						add("KillJoin$appendix") {
+                            if (!s.isConnected || s.isClosed) try {
+                                val dat = ByteArray(addr.size + 1)
+                                val bba = ByteBuffer.wrap(dat).order(ByteOrder.BIG_ENDIAN)
+                                bba.put(0.toByte())
+                                bba.put(addr)
+                                if (ss.isConnected && !ss.isClosed) ss.sendData(6.toByte(), dat)
+                                clientsMap[ss]!!.remove(addr)
+                                remove("KillJoin$appendix")
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            }
+                        }
+                    } else try {
 						if (!s.isClosed)
 							s.sendData(3.toByte(), ByteArray(0))
 					} catch (e: SocketException) {

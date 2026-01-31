@@ -82,61 +82,61 @@ object BridgeCLI {
 								}
 							}
 						}
-						add(Runnable {
-							try {
-								if (s.getInputStream().available() > 0) {
-									val baos = ByteArrayOutputStream()
-									while (s.getInputStream().available() > 0 && baos.size() <= 1073741824) {
-										val bArr = ByteArray(s.getInputStream().available().coerceAtMost(1073741824-baos.size()))
-										val read = s.getInputStream().read(bArr)
-										baos.write(bArr, 0 ,read)
-									}
-									logger.finest("Adapter: $baos")
-									hc.sock.sendData(hc.type, baos.toByteArray())
-								}
-							} catch (e: IOException) {
-								try {
-									remove("RecvAdapterConnect$appendix")
-									remove("KillConnect$appendix")
-									if (!bc.sock.isClosed) {
-										try {
-											bc.sock.sendClose()
-										} catch (_: Exception) {
-											logger.finer("Socket already closed")
-										}
-										bc.sock.close()
-									}
-									s.close()
-								} catch (ex: IOException) {
-									ex.initCause(e)
-									logger.log(Level.WARNING, "BridgeCLI", ex)
-								}
-							}
-						}, "RecvAdapterConnect$appendix")
-						add(Runnable {
-							if (!bc.sock.isConnected || bc.sock.isClosed) {
-								Thread {
-									try {
-										Thread.sleep(2000)
-										s.close()
-									} catch (e: InterruptedException) {
-										logger.log(Level.WARNING, "BridgeCLI", e)
-									} catch (e: IOException) {
-										logger.log(Level.WARNING, "BridgeCLI", e)
-									}
-								}.start()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} else if (!s.isConnected || s.isClosed) try {
-								bc.sock.sendClose()
-								bc.sock.close()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} catch (e: IOException) {
-								logger.log(Level.WARNING, "BridgeCLI", e)
-							}
-						}, "KillConnect$appendix")
-					} catch (e: IOException) {
+						add("RecvAdapterConnect$appendix") {
+                            try {
+                                if (s.getInputStream().available() > 0) {
+                                    val baos = ByteArrayOutputStream()
+                                    while (s.getInputStream().available() > 0 && baos.size() <= 1073741824) {
+                                        val bArr = ByteArray(s.getInputStream().available().coerceAtMost(1073741824 - baos.size()))
+                                        val read = s.getInputStream().read(bArr)
+                                        baos.write(bArr, 0, read)
+                                    }
+                                    logger.finest("Adapter: $baos")
+                                    hc.sock.sendData(hc.type, baos.toByteArray())
+                                }
+                            } catch (e: IOException) {
+                                try {
+                                    remove("RecvAdapterConnect$appendix")
+                                    remove("KillConnect$appendix")
+                                    if (!bc.sock.isClosed) {
+                                        try {
+                                            bc.sock.sendClose()
+                                        } catch (_: Exception) {
+                                            logger.finer("Socket already closed")
+                                        }
+                                        bc.sock.close()
+                                    }
+                                    s.close()
+                                } catch (ex: IOException) {
+                                    ex.initCause(e)
+                                    logger.log(Level.WARNING, "BridgeCLI", ex)
+                                }
+                            }
+                        }
+                        add("KillConnect$appendix") {
+                            if (!bc.sock.isConnected || bc.sock.isClosed) {
+                                Thread {
+                                    try {
+                                        Thread.sleep(2000)
+                                        s.close()
+                                    } catch (e: InterruptedException) {
+                                        logger.log(Level.WARNING, "BridgeCLI", e)
+                                    } catch (e: IOException) {
+                                        logger.log(Level.WARNING, "BridgeCLI", e)
+                                    }
+                                }.start()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } else if (!s.isConnected || s.isClosed) try {
+                                bc.sock.sendClose()
+                                bc.sock.close()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } catch (e: IOException) {
+                                logger.log(Level.WARNING, "BridgeCLI", e)
+                            }
+                        }
+                    } catch (e: IOException) {
 						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 				}
@@ -269,43 +269,43 @@ object BridgeCLI {
 						var lSock: Socket
 						connections[addr] = Socket("localhost", localPort).also { lSock = it }
 						logger.fine(addr.contentToString())
-						add(Runnable {
-							try {
-								if (lSock.getInputStream().available() > 0) {
-									val baos = ByteArrayOutputStream()
-									baos.write(0)
-									baos.write(0)
-									baos.write(0)
-									baos.write(addr.size)
-									baos.write(addr)
-									while (lSock.getInputStream().available() > 0 && baos.size() <= 1073741824) {
-										val b_arr = ByteArray(lSock.getInputStream().available().coerceAtMost(1073741824-baos.size()))
-										val read = lSock.getInputStream().read(b_arr)
-										baos.write(b_arr, 0, read)
-									}
-									logger.finest("Adapter: $baos")
-									hc.normalConnector.sendData(baos.toByteArray())
-								}
-							} catch (e: IOException) {
-								logger.log(Level.WARNING, "BridgeCLI", e)
-							}
-						}, "RecvAdapterConnect$appendix")
-						add(Runnable {
-							if (!hc.normalConnector.sock.isConnected || hc.normalConnector.sock.isClosed) try {
-								lSock.close()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} catch (e: IOException) {
-								logger.log(Level.WARNING, "BridgeCLI", e)
-							} else if (!lSock.isConnected || lSock.isClosed) try {
-								hc.announceConnector.sendData(2.toByte(), addr)
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} catch (e: IOException) {
-								logger.log(Level.WARNING, "BridgeCLI", e)
-							}
-						}, "KillConnect$appendix")
-					} catch (e: Exception) {
+						add("RecvAdapterConnect$appendix") {
+                            try {
+                                if (lSock.getInputStream().available() > 0) {
+                                    val baos = ByteArrayOutputStream()
+                                    baos.write(0)
+                                    baos.write(0)
+                                    baos.write(0)
+                                    baos.write(addr.size)
+                                    baos.write(addr)
+                                    while (lSock.getInputStream().available() > 0 && baos.size() <= 1073741824) {
+                                        val b_arr = ByteArray(lSock.getInputStream().available().coerceAtMost(1073741824 - baos.size()))
+                                        val read = lSock.getInputStream().read(b_arr)
+                                        baos.write(b_arr, 0, read)
+                                    }
+                                    logger.finest("Adapter: $baos")
+                                    hc.normalConnector.sendData(baos.toByteArray())
+                                }
+                            } catch (e: IOException) {
+                                logger.log(Level.WARNING, "BridgeCLI", e)
+                            }
+                        }
+                        add("KillConnect$appendix") {
+                            if (!hc.normalConnector.sock.isConnected || hc.normalConnector.sock.isClosed) try {
+                                lSock.close()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } catch (e: IOException) {
+                                logger.log(Level.WARNING, "BridgeCLI", e)
+                            } else if (!lSock.isConnected || lSock.isClosed) try {
+                                hc.announceConnector.sendData(2.toByte(), addr)
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } catch (e: IOException) {
+                                logger.log(Level.WARNING, "BridgeCLI", e)
+                            }
+                        }
+                    } catch (e: Exception) {
 						logger.log(Level.WARNING, "BridgeCLI", e)
 					} else try {
 						connections[addr]!!.close()
@@ -405,61 +405,61 @@ object BridgeCLI {
 								}
 							}
 						}
-						add(Runnable {
-							try {
-								if (s.getInputStream().available() > 0) {
-									val baos = ByteArrayOutputStream()
-									while (s.getInputStream().available() > 0 && baos.size() <= 1073741824) {
-										val bArr = ByteArray(s.getInputStream().available().coerceAtMost(1073741824-baos.size()))
-										val read = s.getInputStream().read(bArr)
-										baos.write(bArr, 0, read)
-									}
-									logger.finest("Adapter: $baos")
-									hc.sendData(hc.type, baos.toByteArray())
-								}
-							} catch (e: IOException) {
-								try {
-									remove("RecvAdapterConnect$appendix")
-									remove("KillConnect$appendix")
-									if (!bc.sock.isClosed) {
-										try {
-											bc.sock.sendClose()
-										} catch (ignored: Exception) {
-											logger.finer("Socket already closed")
-										}
-										bc.sock.close()
-									}
-									s.close()
-								} catch (ex: IOException) {
-									ex.initCause(e)
-									logger.log(Level.WARNING, "BridgeCLI", ex)
-								}
-							}
-						}, "RecvAdapterConnect$appendix")
-						add(Runnable {
-							if (!bc.sock.isConnected || bc.sock.isClosed) {
-								Thread {
-									try {
-										Thread.sleep(2000)
-										s.close()
-									} catch (e: InterruptedException) {
-										logger.log(Level.WARNING, "BridgeCLI", e)
-									} catch (e: IOException) {
-										logger.log(Level.WARNING, "BridgeCLI", e)
-									}
-								}.start()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} else if (!s.isConnected || s.isClosed) try {
-								bc.sock.sendClose()
-								bc.sock.close()
-								remove("RecvAdapterConnect$appendix")
-								remove("KillConnect$appendix")
-							} catch (e: IOException) {
-								logger.log(Level.WARNING, "BridgeCLI", e)
-							}
-						}, "KillConnect$appendix")
-					} catch (e: Exception) {
+						add("RecvAdapterConnect$appendix") {
+                            try {
+                                if (s.getInputStream().available() > 0) {
+                                    val baos = ByteArrayOutputStream()
+                                    while (s.getInputStream().available() > 0 && baos.size() <= 1073741824) {
+                                        val bArr = ByteArray(s.getInputStream().available().coerceAtMost(1073741824 - baos.size()))
+                                        val read = s.getInputStream().read(bArr)
+                                        baos.write(bArr, 0, read)
+                                    }
+                                    logger.finest("Adapter: $baos")
+                                    hc.sendData(hc.type, baos.toByteArray())
+                                }
+                            } catch (e: IOException) {
+                                try {
+                                    remove("RecvAdapterConnect$appendix")
+                                    remove("KillConnect$appendix")
+                                    if (!bc.sock.isClosed) {
+                                        try {
+                                            bc.sock.sendClose()
+                                        } catch (_: Exception) {
+                                            logger.finer("Socket already closed")
+                                        }
+                                        bc.sock.close()
+                                    }
+                                    s.close()
+                                } catch (ex: IOException) {
+                                    ex.initCause(e)
+                                    logger.log(Level.WARNING, "BridgeCLI", ex)
+                                }
+                            }
+                        }
+                        add("KillConnect$appendix") {
+                            if (!bc.sock.isConnected || bc.sock.isClosed) {
+                                Thread {
+                                    try {
+                                        Thread.sleep(2000)
+                                        s.close()
+                                    } catch (e: InterruptedException) {
+                                        logger.log(Level.WARNING, "BridgeCLI", e)
+                                    } catch (e: IOException) {
+                                        logger.log(Level.WARNING, "BridgeCLI", e)
+                                    }
+                                }.start()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } else if (!s.isConnected || s.isClosed) try {
+                                bc.sock.sendClose()
+                                bc.sock.close()
+                                remove("RecvAdapterConnect$appendix")
+                                remove("KillConnect$appendix")
+                            } catch (e: IOException) {
+                                logger.log(Level.WARNING, "BridgeCLI", e)
+                            }
+                        }
+                    } catch (e: Exception) {
 						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 				}
@@ -633,19 +633,19 @@ object BridgeCLI {
 			}
 		}
 		argCollector?.run()
-		add(Runnable {
-			if (System.`in`.available() > 0) {
-				var lastByte = 0
-				val baos = ByteArrayOutputStream()
-				while (System.`in`.available() > 0 && lastByte != 10 && lastByte != 13) // 10 = '\n' and 13 = '\r'
-					baos.write(System.`in`.read().also { lastByte = it })
+		add("InteractiveInput", 100) {
+            if (System.`in`.available() > 0) {
+                var lastByte = 0
+                val baos = ByteArrayOutputStream()
+                while (System.`in`.available() > 0 && lastByte != 10 && lastByte != 13) // 10 = '\n' and 13 = '\r'
+                    baos.write(System.`in`.read().also { lastByte = it })
 
-				var string = String(baos.toByteArray(), Charsets.UTF_8)
-				string = string.replace('\n', '\u0000').replace('\r', '\u0000').replace("\u0000", "")
-				handleInteractiveInput(string)
-			}
-		}, "InteractiveInput", 100)
-	}
+                var string = String(baos.toByteArray(), Charsets.UTF_8)
+                string = string.replace('\n', '\u0000').replace('\r', '\u0000').replace("\u0000", "")
+                handleInteractiveInput(string)
+            }
+        }
+    }
 
 	private fun handleInteractiveInput(input: String) {
 		val options = arrayOf("help", "printSockets", "printThreads", "exit")
