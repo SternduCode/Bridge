@@ -3,8 +3,8 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
+import com.sterndu.data.transfer.basic.Socket
 import com.sterndu.data.transfer.secure.ServerSocket
-import com.sterndu.data.transfer.secure.Socket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
