@@ -3,6 +3,7 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
+import com.sterndu.data.transfer.Socket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
@@ -11,7 +12,6 @@ import com.sterndu.network.balancer.Tester
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.ServerSocket
-import java.net.Socket
 import java.net.SocketException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -22,6 +22,7 @@ import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.system.exitProcess
+import java.net.Socket as NetSocket
 
 object BridgeCLI {
 	private lateinit var logger: Logger
@@ -199,9 +200,7 @@ object BridgeCLI {
 		println("  announce-server")
 		println("  ping")
 		println("")
-		println(
-			"Inside the () there are all modes with which the option can be used, if the mode is followed with an ! it is mandatory in that mode"
-		)
+		println("Inside the () there are all modes with which the option can be used, if the mode is followed with an ! it is mandatory in that mode")
 		println("")
 		println("options:")
 		println("  -s, --server ADDRESS       the bridge server it should connect to, can contain the port (connect!, join!, host!, ping!)")
@@ -262,12 +261,12 @@ object BridgeCLI {
 				} catch (e: Exception) {
 					logger.warning("$announce is not a correct hostname:port pair")
 				}
-				val connections: MutableMap<ByteArray, Socket> = HashMap()
+				val connections: MutableMap<ByteArray, NetSocket> = HashMap()
 				hc.announceConnector.handle = { type: Byte, addr: ByteArray ->
 					val appendix = "Host" + localPort + "|" + server + ":" + port + "|" + String(addr)
 					if (type.toInt() == 1) try {
-						var lSock: Socket
-						connections[addr] = Socket("localhost", localPort).also { lSock = it }
+						var lSock: NetSocket
+						connections[addr] = NetSocket("localhost", localPort).also { lSock = it }
 						logger.fine(addr.contentToString())
 						add("RecvAdapterConnect$appendix") {
                             try {
@@ -330,7 +329,7 @@ object BridgeCLI {
 						bb[dat]
 						logger.finest("Adapter: " + String(dat))
 						logger.fine(
-							connections.map { (key, value): Map.Entry<ByteArray, Socket> ->
+							connections.map { (key, value): Map.Entry<ByteArray, NetSocket> ->
 								key.contentToString() to value
 							}.toString()
 						)
@@ -693,7 +692,7 @@ object BridgeCLI {
 	}
 
 	private fun ping(server: String, port: Int, raw: Boolean) {
-		val sock = com.sterndu.data.transfer.secure.Socket(server, port)
+		val sock = Socket(NetSocket(server, port), secureMode = true)
 		while (!sock.initialized) {
 			Thread.sleep(1)
 		}
@@ -705,7 +704,7 @@ object BridgeCLI {
 		if (!sock.isClosed) {
 			try {
 				sock.sendClose()
-			} catch (e: SocketException) {
+			} catch (_: SocketException) {
 				logger.finer("Socket already closed")
 			}
 			sock.close()
@@ -813,7 +812,7 @@ object BridgeCLI {
 							if (iPort < 0 || iPort > 65535) throw NumberFormatException()
 							targetPort = iPort
 							return
-						} catch (e: NumberFormatException) {
+						} catch (_: NumberFormatException) {
 							logger.warning("$sPort is not valid Port number")
 							return
 						}
@@ -826,7 +825,7 @@ object BridgeCLI {
 						if (iPort < 0 || iPort > 65535) throw NumberFormatException()
 						targetPort = iPort
 						return
-					} catch (e: NumberFormatException) {
+					} catch (_: NumberFormatException) {
 						logger.warning("$sPort is not valid Port number")
 						return
 					}
@@ -859,7 +858,7 @@ object BridgeCLI {
 				if (iPort < 0 || iPort > 65535) throw NumberFormatException()
 				localPort = iPort
 				return
-			} catch (e: NumberFormatException) {
+			} catch (_: NumberFormatException) {
 				logger.warning("$port is not valid Port number")
 				return
 			}
@@ -875,7 +874,7 @@ object BridgeCLI {
 				if (iPort < 0 || iPort > 65535) throw NumberFormatException()
 				this.port = iPort
 				return
-			} catch (e: NumberFormatException) {
+			} catch (_: NumberFormatException) {
 				logger.warning("$port is not valid Port number")
 				return
 			}
@@ -886,7 +885,7 @@ object BridgeCLI {
 			if (value.isNotEmpty()) try {
 				cycles = value.toLong()
 				return
-			} catch (e: java.lang.NumberFormatException) {
+			} catch (_: java.lang.NumberFormatException) {
 				logger.warning("$value is not valid number")
 				return
 			}
@@ -896,7 +895,7 @@ object BridgeCLI {
 			if (value.isNotEmpty()) try {
 				duration = value.toLong()
 				return
-			} catch (e: java.lang.NumberFormatException) {
+			} catch (_: java.lang.NumberFormatException) {
 				logger.warning("$value is not valid number")
 				return
 			}
@@ -906,7 +905,7 @@ object BridgeCLI {
 			if (value.isNotEmpty()) try {
 				longDuration = value.toLong()
 				return
-			} catch (e: java.lang.NumberFormatException) {
+			} catch (_: java.lang.NumberFormatException) {
 				logger.warning("$value is not valid number")
 				return
 			}
@@ -916,7 +915,7 @@ object BridgeCLI {
 			if (value.isNotEmpty()) try {
 				timeout = value.toLong()
 				return
-			} catch (e: java.lang.NumberFormatException) {
+			} catch (_: java.lang.NumberFormatException) {
 				logger.warning("$value is not valid number")
 				return
 			}
@@ -926,7 +925,7 @@ object BridgeCLI {
 			if (value.isNotEmpty()) try {
 				wait = value.toLong()
 				return
-			} catch (e: java.lang.NumberFormatException) {
+			} catch (_: java.lang.NumberFormatException) {
 				logger.warning("$value is not valid number")
 				return
 			}
@@ -937,7 +936,7 @@ object BridgeCLI {
 			if (value.isNotEmpty()) try {
 				cores = value.toInt()
 				return
-			} catch (e: java.lang.NumberFormatException) {
+			} catch (_: java.lang.NumberFormatException) {
 				logger.warning("$value is not valid number")
 				return
 			}
