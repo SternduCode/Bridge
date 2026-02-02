@@ -2,7 +2,7 @@
 package com.sterndu.bridge
 
 import com.sterndu.data.transfer.Connector
-import com.sterndu.data.transfer.Socket
+import com.sterndu.data.transfer.DataTransferSocket
 import java.io.IOException
 import java.net.SocketException
 import java.net.UnknownHostException
@@ -22,7 +22,7 @@ import java.net.Socket as NetSocket
 class BridgeClient	@Throws(IOException::class, UnknownHostException::class) @JvmOverloads constructor(hostname: String, port: Int = BridgeUtil.DEFAULT_PORT) {
 
 	@JvmField
-	val sock: Socket = Socket(NetSocket(hostname, port), true)
+	val sock: DataTransferSocket = DataTransferSocket(NetSocket(hostname, port), true)
 
     /**
 	 * Connect.

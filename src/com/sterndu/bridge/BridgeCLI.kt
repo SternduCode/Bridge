@@ -3,7 +3,8 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
-import com.sterndu.data.transfer.Socket
+import com.sterndu.data.transfer.DataTransferSocket
+import com.sterndu.data.transfer.SecureServerSocket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
@@ -251,7 +252,7 @@ object BridgeCLI {
 					val sp = announce.split(":").dropLastWhile { it.isEmpty() }.toTypedArray()
 					val announcePort = sp.last()
 					val announceLocal = announce.substring(0, announce.length - announcePort.length - 1)
-					val announceSocket = Socket(NetSocket(announceLocal, announcePort.toInt()), secureMode = true)
+					val announceSocket = DataTransferSocket(NetSocket(announceLocal, announcePort.toInt()), secureMode = true)
 					while (!announceSocket.initialized) try {
 						Thread.sleep(5L)
 					} catch (e: Exception) {
@@ -653,7 +654,7 @@ object BridgeCLI {
 			if (options.contains(input)) {
 				when (input) {
 					"printSockets" -> {
-						val sockets = Socket.allSockets
+						val sockets = DataTransferSocket.allSockets
 						println("${sockets.size} Sockets created")
 						val out = sockets.entries.mapIndexed { index, (socket, stack) ->
 							"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()}" +
@@ -692,7 +693,7 @@ object BridgeCLI {
 	}
 
 	private fun ping(server: String, port: Int, raw: Boolean) {
-		val sock = Socket(NetSocket(server, port), secureMode = true)
+		val sock = DataTransferSocket(NetSocket(server, port), secureMode = true)
 		while (!sock.initialized) {
 			Thread.sleep(1)
 		}
@@ -743,7 +744,7 @@ object BridgeCLI {
 		Thread {
 			var uiLi: MutableList<String>? = null
 			if (isUIEnabled && ui) uiLi = getLog("Announce-Server $port")
-			val server = com.sterndu.data.transfer.secure.ServerSocket(ServerSocket(port))
+			val server = SecureServerSocket(ServerSocket(port))
 			uiLi?.add("Running on Port ${server.serverSocket.localPort}") ?: logger.info("Running on Port ${server.serverSocket.localPort}")
 			while (System.`in`.available() == 0) {
 				val sock = server.accept()

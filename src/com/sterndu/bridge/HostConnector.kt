@@ -2,10 +2,10 @@
 package com.sterndu.bridge
 
 import com.sterndu.data.transfer.Connector
-import com.sterndu.data.transfer.Socket
+import com.sterndu.data.transfer.DataTransferSocket
 import java.net.SocketException
 
-class HostConnector(@JvmField val announceConnector: Connector, @JvmField val normalConnector: Connector, private val sock: Socket) {
+class HostConnector(@JvmField val announceConnector: Connector, @JvmField val normalConnector: Connector, private val sock: DataTransferSocket) {
 
 	/** The code.  */
 	@JvmField

@@ -3,13 +3,14 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
-import com.sterndu.data.transfer.Socket
-import com.sterndu.data.transfer.secure.ServerSocket
+import com.sterndu.data.transfer.DataTransferSocket
+import com.sterndu.data.transfer.SecureServerSocket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.net.ServerSocket
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
@@ -27,18 +28,18 @@ import java.util.logging.Level
 class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: Int = BridgeUtil.DEFAULT_PORT, private var ui: Boolean = false) {
 
 	/** The server socket.  */
-	private var serverSocket: ServerSocket
+	private var serverSocket: SecureServerSocket
 
 	private val logger = LoggingUtil.getLogger("BridgeServer")
 
 	/** The hosts.  */
-	private val hosts: MutableMap<String, Socket> = HashMap()
+	private val hosts: MutableMap<String, DataTransferSocket> = HashMap()
 
-	private val clientsMap: MutableMap<Socket, MutableMap<ByteArray, Socket>> = HashMap()
+	private val clientsMap: MutableMap<DataTransferSocket, MutableMap<ByteArray, DataTransferSocket>> = HashMap()
 
 	init {
 		try {
-			serverSocket = ServerSocket(java.net.ServerSocket(port))
+			serverSocket = SecureServerSocket(ServerSocket(port))
 		} catch (e: IOException) {
 			throw e
 		}
@@ -61,7 +62,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 				if (log != null) {
 					log[0] = "Main Loop"
 					val i = AtomicInteger(1)
-					clientsMap.forEach { (so: Socket, clients: Map<ByteArray, Socket>) ->
+					clientsMap.forEach { (so: DataTransferSocket, clients: Map<ByteArray, DataTransferSocket>) ->
 						val out = i.get().toString() + " " + so + " " + clients.values + " " + so.getAveragePingTime() + "ms " + clients.values.map { it.getAveragePingTime() }
 						if (log.size <= i.get()) {
 							log.add(out)
@@ -90,7 +91,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						r.nextBytes(value)
 						out = String(Base64.getEncoder().encode(value), Charsets.UTF_8)
 					} while (hosts.containsKey(out)) // Maybe Error
-					val clients: MutableMap<ByteArray, Socket> = HashMap()
+					val clients: MutableMap<ByteArray, DataTransferSocket> = HashMap()
 					clientsMap[s] = clients
 					hosts[out] = s
 					try {
@@ -101,7 +102,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 					}
 					s.setHandle(6.toByte()) { type: Byte, dat: ByteArray ->
 						if (type.toInt() == 2) try {
-							val it: MutableIterator<Map.Entry<ByteArray, Socket>> = clients.entries.iterator()
+							val it: MutableIterator<Map.Entry<ByteArray, DataTransferSocket>> = clients.entries.iterator()
 							while (it.hasNext()) {
 								val (key, value1) = it.next()
 								if (key.contentEquals(dat)) {
@@ -127,11 +128,11 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 						if ("true" == System.getProperty("debug")) println(String(remData))
 						if ("true" == System.getProperty("debug")) println(addr.contentToString())
 						if ("true" == System.getProperty("debug")) println(
-							clients.map { (addr, value1): Map.Entry<ByteArray, Socket> ->
+							clients.map { (addr, value1): Map.Entry<ByteArray, DataTransferSocket> ->
 								addr.contentToString() to value1
 							}.toList()
 						)
-						clients.forEach { (addrL: ByteArray, ss: Socket) ->
+						clients.forEach { (addrL: ByteArray, ss: DataTransferSocket) ->
 							if (wild || addr.contentEquals(addrL)) try {
 								ss.sendData(5.toByte(), remData)
 							} catch (e: SocketException) {
