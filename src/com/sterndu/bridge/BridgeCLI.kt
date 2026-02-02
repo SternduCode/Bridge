@@ -744,7 +744,7 @@ object BridgeCLI {
 		Thread {
 			var uiLi: MutableList<String>? = null
 			if (isUIEnabled && ui) uiLi = getLog("Announce-Server $port")
-			val server = com.sterndu.data.transfer.secure.ServerSocket(port)
+			val server = com.sterndu.data.transfer.secure.ServerSocket(ServerSocket(port))
 			uiLi?.add("Running on Port ${server.serverSocket.localPort}") ?: logger.info("Running on Port ${server.serverSocket.localPort}")
 			while (System.`in`.available() == 0) {
 				val sock = server.accept()
@@ -755,7 +755,7 @@ object BridgeCLI {
 					if (!sock.isClosed) {
 						try {
 							sock.sendClose()
-						} catch (e: Exception) {
+						} catch (_: Exception) {
 							logger.finer("Socket already closed")
 						}
 						sock.close()

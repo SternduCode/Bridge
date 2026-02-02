@@ -38,7 +38,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 
 	init {
 		try {
-			serverSocket = ServerSocket(port)
+			serverSocket = ServerSocket(java.net.ServerSocket(port))
 		} catch (e: IOException) {
 			throw e
 		}
