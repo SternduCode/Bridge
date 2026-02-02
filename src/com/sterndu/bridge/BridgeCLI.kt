@@ -251,14 +251,14 @@ object BridgeCLI {
 					val sp = announce.split(":").dropLastWhile { it.isEmpty() }.toTypedArray()
 					val announcePort = sp.last()
 					val announceLocal = announce.substring(0, announce.length - announcePort.length - 1)
-					val announceSocket = com.sterndu.data.transfer.secure.Socket(announceLocal, announcePort.toInt())
+					val announceSocket = Socket(NetSocket(announceLocal, announcePort.toInt()), secureMode = true)
 					while (!announceSocket.initialized) try {
 						Thread.sleep(5L)
 					} catch (e: Exception) {
 						logger.log(Level.WARNING, "BridgeCLI", e)
 					}
 					announceSocket.sendData(0xa0.toByte(), hc.code!!.toByteArray(Charsets.UTF_8))
-				} catch (e: Exception) {
+				} catch (_: Exception) {
 					logger.warning("$announce is not a correct hostname:port pair")
 				}
 				val connections: MutableMap<ByteArray, NetSocket> = HashMap()
@@ -653,7 +653,7 @@ object BridgeCLI {
 			if (options.contains(input)) {
 				when (input) {
 					"printSockets" -> {
-						val sockets = com.sterndu.data.transfer.Socket.allSockets
+						val sockets = Socket.allSockets
 						println("${sockets.size} Sockets created")
 						val out = sockets.entries.mapIndexed { index, (socket, stack) ->
 							"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()}" +

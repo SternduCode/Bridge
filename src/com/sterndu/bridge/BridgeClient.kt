@@ -2,13 +2,14 @@
 package com.sterndu.bridge
 
 import com.sterndu.data.transfer.Connector
-import com.sterndu.data.transfer.secure.Socket
+import com.sterndu.data.transfer.Socket
 import java.io.IOException
 import java.net.SocketException
 import java.net.UnknownHostException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.*
+import java.net.Socket as NetSocket
 
 /**
  * Instantiates a new bridge client.
@@ -19,20 +20,11 @@ import java.util.*
  * @throws IOException Signals that an I/O exception has occurred.
  */
 class BridgeClient	@Throws(IOException::class, UnknownHostException::class) @JvmOverloads constructor(hostname: String, port: Int = BridgeUtil.DEFAULT_PORT) {
-	/**
-	 * Gets the sock.
-	 *
-	 * @return the sock
-	 */
-	/** The sock.  */
+
 	@JvmField
-	val sock: Socket
+	val sock: Socket = Socket(NetSocket(hostname, port), true)
 
-	init {
-		sock = Socket(hostname, port)
-	}
-
-	/**
+    /**
 	 * Connect.
 	 *
 	 * @param remoteHostname the remote hostname
