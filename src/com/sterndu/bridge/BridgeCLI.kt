@@ -654,7 +654,7 @@ object BridgeCLI {
 			if (options.contains(input)) {
 				when (input) {
 					"printSockets" -> {
-						val sockets = com.sterndu.data.transfer.basic.Socket.allSockets
+						val sockets = com.sterndu.data.transfer.Socket.allSockets
 						println("${sockets.size} Sockets created")
 						val out = sockets.entries.mapIndexed { index, (socket, stack) ->
 							"$index: [${socket.name()}] isConnected=${socket.isConnected} isClosed=${socket.isClosed} Ping=${socket.getAveragePingTime()}" +
