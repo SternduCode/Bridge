@@ -3,8 +3,8 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
+import com.sterndu.data.transfer.DataTransferServerSocket
 import com.sterndu.data.transfer.DataTransferSocket
-import com.sterndu.data.transfer.SecureServerSocket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
@@ -28,7 +28,7 @@ import java.util.logging.Level
 class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: Int = BridgeUtil.DEFAULT_PORT, private var ui: Boolean = false) {
 
 	/** The server socket.  */
-	private var serverSocket: SecureServerSocket
+	private var serverSocket: DataTransferServerSocket
 
 	private val logger = LoggingUtil.getLogger("BridgeServer")
 
@@ -39,7 +39,7 @@ class BridgeServer @JvmOverloads @Throws(IOException::class) constructor(port: I
 
 	init {
 		try {
-			serverSocket = SecureServerSocket(ServerSocket(port))
+			serverSocket = DataTransferServerSocket(ServerSocket(port), true)
 		} catch (e: IOException) {
 			throw e
 		}

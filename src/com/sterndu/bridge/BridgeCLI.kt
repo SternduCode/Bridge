@@ -3,8 +3,8 @@ package com.sterndu.bridge
 
 import com.sterndu.bridge.BridgeUI.getLog
 import com.sterndu.bridge.BridgeUI.isUIEnabled
+import com.sterndu.data.transfer.DataTransferServerSocket
 import com.sterndu.data.transfer.DataTransferSocket
-import com.sterndu.data.transfer.SecureServerSocket
 import com.sterndu.multicore.LoggingUtil
 import com.sterndu.multicore.Updater.add
 import com.sterndu.multicore.Updater.remove
@@ -60,7 +60,7 @@ object BridgeCLI {
 							hc = bc.connect(remote, remotePort)
 						}
 						hc.disableHandle()
-						hc.sock.setHandle(hc.type) { type: Byte, data: ByteArray ->
+						hc.client.setHandle(hc.type) { type: Byte, data: ByteArray ->
 							try {
 								logger.finest("Adapter: " + String(data))
 								s.getOutputStream().write(data)
@@ -94,7 +94,7 @@ object BridgeCLI {
                                         baos.write(bArr, 0, read)
                                     }
                                     logger.finest("Adapter: $baos")
-                                    hc.sock.sendData(hc.type, baos.toByteArray())
+                                    hc.client.sendData(hc.type, baos.toByteArray())
                                 }
                             } catch (e: IOException) {
                                 try {
@@ -291,7 +291,7 @@ object BridgeCLI {
                             }
                         }
                         add("KillConnect$appendix") {
-                            if (!hc.normalConnector.sock.isConnected || hc.normalConnector.sock.isClosed) try {
+                            if (!hc.normalConnector.client.isConnected || hc.normalConnector.client.isClosed) try {
                                 lSock.close()
                                 remove("RecvAdapterConnect$appendix")
                                 remove("KillConnect$appendix")
