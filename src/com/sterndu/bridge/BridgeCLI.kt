@@ -744,7 +744,7 @@ object BridgeCLI {
 		Thread {
 			var uiLi: MutableList<String>? = null
 			if (isUIEnabled && ui) uiLi = getLog("Announce-Server $port")
-			val server = SecureServerSocket(ServerSocket(port))
+			val server = DataTransferServerSocket(ServerSocket(port), true)
 			uiLi?.add("Running on Port ${server.serverSocket.localPort}") ?: logger.info("Running on Port ${server.serverSocket.localPort}")
 			while (System.`in`.available() == 0) {
 				val sock = server.accept()
