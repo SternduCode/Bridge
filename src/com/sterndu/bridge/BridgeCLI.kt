@@ -6,8 +6,8 @@ import com.sterndu.bridge.BridgeUI.isUIEnabled
 import com.sterndu.data.transfer.DataTransferServerSocket
 import com.sterndu.data.transfer.DataTransferSocket
 import com.sterndu.multicore.LoggingUtil
-import com.sterndu.multicore.Updater.add
-import com.sterndu.multicore.Updater.remove
+import com.sterndu.multicore.RepeatingTaskHandler.add
+import com.sterndu.multicore.RepeatingTaskHandler.remove
 import com.sterndu.network.balancer.Balancer
 import com.sterndu.network.balancer.Tester
 import java.io.ByteArrayOutputStream
