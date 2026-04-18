@@ -2,7 +2,7 @@
 package com.sterndu.bridge
 
 import com.sterndu.multicore.LoggingUtil
-import com.sterndu.multicore.Updater
+import com.sterndu.multicore.RepeatingTaskHandler
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.ConsoleHandler
@@ -39,7 +39,7 @@ object BridgeUI {
 	init {
 		if (isUIEnabled) {
 			it = logs.entries.iterator()
-			Updater.add("Bridge-UI", 1000) {
+			RepeatingTaskHandler.add("Bridge-UI", 1000) {
                 val localIt = it!!
                 if (!localIt.hasNext()) {
                     it = logs.entries.iterator()
